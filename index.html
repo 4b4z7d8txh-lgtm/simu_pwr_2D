@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PWR Startup Simulator — Main Control Room</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <h1>☢ PWR STARTUP SIMULATOR</h1>
+  <span id="phaseName"></span>
+  <span id="clock">T+00:00:00</span>
+  <div class="spd" id="spdBox"></div>
+  <button id="manualBtn">MANUAL</button>
+  <button id="muteBtn">🔊</button>
+  <button id="scramBtn">SCRAM</button>
+</header>
+
+<div id="view">
+  <canvas id="plantCanvas"></canvas>
+  <div id="checklist">
+    <button class="toggle" id="clToggle">▾</button>
+    <div id="clBody"></div>
+  </div>
+  <div id="eventLog"></div>
+  <div id="winBanner">
+    <h2>★ UNIT ONLINE — 100% POWER ★</h2>
+    <p id="winScore"></p>
+    <p>From an open reactor vessel to 1100 MWe on the grid. Well done, operator.</p>
+  </div>
+  <div id="annunciator"></div>
+</div>
+
+<div id="side"></div>
+<footer></footer>
+
+<div id="modal">
+  <div class="box">
+    <h2>Operations Manual — Unit 1 Startup</h2>
+    <p>You are the main control room operator. Take the plant from an open, defueled
+    reactor to 100% power. Use the time acceleration buttons (up to 900x) for the slow
+    evolutions, and slow back down for delicate ones (criticality!). Every reactor trip
+    costs 150 points. <b>Space bar</b> pauses.</p>
+
+    <h3>Phase 1 — Refueling</h3>
+    <ul>
+      <li>Load the core, verify rods inserted and boron ≥ 2000 ppm, install the vessel
+      head, then fill &amp; vent the RCS. The plant is now <i>water-solid</i> (no steam
+      bubble anywhere, pressure reacts sharply to volume changes).</li>
+    </ul>
+
+    <h3>Phase 2 — Heatup &amp; pressurization</h3>
+    <ul>
+      <li>Raise pressure to ~30 bar with charging &gt; letdown, then start the 4 RCPs
+      (they need ≥ 24 bar and trip below ~20 bar).</li>
+      <li>Energize pressurizer heaters. While solid, thermal expansion drives pressure up
+      fast — bleed with letdown to stay under the <b>P-T limit</b> (see footer indicator).</li>
+      <li>When PRZ temperature &gt; ~230 °C, drain (letdown &gt; charging) to draw a steam
+      bubble. Pressure then follows PRZ saturation temperature: heaters raise it, spray lowers it.</li>
+      <li>Pump heat (~20 MW) warms the RCS at ~27 °C/h. Coordinate pressure with temperature:
+      keep pressure under the P-T limit but high enough for subcooling. Manage the level
+      swell with letdown (target 40–70%).</li>
+      <li>Finish at 155 bar / 291 °C (PRZ at ~345 °C does this).</li>
+    </ul>
+
+    <h3>Phase 3 — Approach to criticality</h3>
+    <ul>
+      <li>Withdraw shutdown banks fully, then the control bank to ~60%.</li>
+      <li>Select DILUTE with good charging flow and watch source-range counts climb.
+      Near criticality the startup rate (SUR) rises — go to low time acceleration,
+      stop diluting, and control with rods. Trip setpoint: 5 dpm.</li>
+      <li>Stabilize between 1 kW and 30 MW with |SUR| &lt; 0.3 dpm.</li>
+    </ul>
+
+    <h3>Phase 4 — Power ascension &amp; turbine</h3>
+    <ul>
+      <li>Withdraw rods to climb above 8% power. Nuclear heat now dominates: open the
+      <b>steam dump</b> to hold Tavg ≈ 292 °C, and start <b>feedwater</b> gently (cold
+      aux feed overcools the SG if you slam it in).</li>
+      <li>Latch &amp; roll the turbine (needs SG ≥ 60 bar), sync the breaker at 3000 rpm,
+      then raise load to ~300 MWe and close the dump. The reactor follows steam demand
+      through the negative moderator coefficient.</li>
+    </ul>
+
+    <h3>Phase 5 — Ramp to 100%</h3>
+    <ul>
+      <li>Raise the load setpoint stepwise to 1100 MWe. Keep Tavg on the program
+      (292 → 306 °C, see T REF indicator) by withdrawing rods and diluting boron.
+      Match feedwater to steam flow, keep SG level 40–60% and all 4 RCPs running.</li>
+    </ul>
+
+    <h3>Phase 6 — Steady state</h3>
+    <ul><li>Hold ≥ 1078 MWe within limits for 5 minutes to finish.</li></ul>
+
+    <h3>Trips to avoid</h3>
+    <p>High flux (109%), high SUR (5 dpm), PRZ pressure &lt; 131 / &gt; 166 bar,
+    Tavg &gt; 316 °C, SG level &lt; 15%, &lt; 4 RCPs above 30% power, low PRZ level at power.</p>
+    <button class="btn" id="modalClose">CLOSE</button>
+  </div>
+</div>
+
+<script src="js/water.js"></script>
+<script src="js/simulation.js"></script>
+<script src="js/phases.js"></script>
+<script src="js/diagram.js"></script>
+<script src="js/panels.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
