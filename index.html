@@ -56,12 +56,15 @@
       <li>Raise pressure to ~30 bar with charging &gt; letdown, then start the 4 RCPs
       (they need ≥ 24 bar and trip below ~20 bar).</li>
       <li>Energize pressurizer heaters. While solid, thermal expansion drives pressure up
-      fast — bleed with letdown to stay under the <b>P-T limit</b> (see footer indicator).</li>
+      fast — bleed with letdown to stay in the green domain of the <b>P-T diagram</b>
+      ("chaussette", right-hand panel): max 31 bar until 177 °C.</li>
       <li>When PRZ temperature &gt; ~230 °C, drain (letdown &gt; charging) to draw a steam
       bubble. Pressure then follows PRZ saturation temperature: heaters raise it, spray lowers it.</li>
-      <li>Pump heat (~20 MW) warms the RCS at ~27 °C/h. Coordinate pressure with temperature:
-      keep pressure under the P-T limit but high enough for subcooling. Manage the level
-      swell with letdown (target 40–70%).</li>
+      <li>Pump heat (~20 MW) warms the RCS at ~27 °C/h. Climb the blue sock of the P-T
+      diagram: above 177 °C raise pressure with temperature, staying between the upper
+      (overpressure) and lower (saturation margin) boundaries — alarms P-T ENV HIGH/LOW
+      sound if you leave the envelope, and sustained violations cost points. Manage the
+      level swell with letdown (target 40–70%).</li>
       <li>Finish at 155 bar / 291 °C (PRZ at ~345 °C does this).</li>
     </ul>
 
@@ -104,6 +107,7 @@
 <script src="js/water.js"></script>
 <script src="js/simulation.js"></script>
 <script src="js/phases.js"></script>
+<script src="js/ptdiagram.js"></script>
 <script src="js/diagram.js"></script>
 <script src="js/panels.js"></script>
 <script src="js/main.js"></script>

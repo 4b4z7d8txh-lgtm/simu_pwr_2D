@@ -65,6 +65,18 @@ PWR.C = {
   TRIP_LO_SGLVL: 15
 };
 
+/* P-T operating envelope, after the French "chaussette" (sock) diagram:
+ * - below 177 C (AN/RIS-RA domain): max 31 bar (RHR / cold overpressure limit)
+ * - above 177 C (AN/GV sock): left edge jumps to 90 bar then rises ~1 bar/C
+ * - lower boundary: saturation pressure at T + 35 K (subcooling margin)     */
+PWR.ptMax = function (T) {
+  if (T < 177) return 31;
+  return Math.min(160, 90 + (T - 178));
+};
+PWR.ptMin = function (T) {
+  return Math.max(1, PWR.water.psat(T + 35));
+};
+
 PWR.Simulation = function () {
   var C = PWR.C, W = PWR.water;
   var S = this;
@@ -101,6 +113,7 @@ PWR.Simulation = function () {
   S.steamFlow = 0; S.feedFlow = 0;
   S.porvOpen = false; S.turbTripped = false;
   S.surgeRate = 0;               // kg/s into pressurizer (display)
+  S.ptHistory = [];              // sampled [Tavg, P] trail for the P-T diagram
   S._prevVliq = null; S._logP = Math.log10(S.Pn);
 
   /* ---------------- player controls ---------------- */
@@ -203,11 +216,7 @@ PWR.Simulation = function () {
   S.tCold = function () { return S.Tavg - S.coreDT() / 2; };
   S.thermalPower = function () { return S.Pn * 0.94 + S.decay; };
   S.powerPct = function () { return 100 * S.thermalPower() / C.P_NOM_MW; };
-  // brittle-fracture style max pressure for current temperature
-  S.ptMaxP = function () {
-    var x = Math.max(0, (S.Tavg - 50) / 240);
-    return Math.min(175, 35 + 140 * x * x);
-  };
+  S.ptMaxP = function () { return PWR.ptMax(S.Tavg); };
 
   /* ---------------- main step ---------------- */
   S.step = function (dt) {
@@ -341,13 +350,20 @@ PWR.Simulation = function () {
       }
     }
 
-    S.updateAlarms();
+    // P-T trail for the chaussette diagram
+    if (S.filled && S.t - (S._histT || 0) >= 20) {
+      S._histT = S.t;
+      S.ptHistory.push([S.Tavg, S.P]);
+      if (S.ptHistory.length > 900) S.ptHistory.shift();
+    }
+
+    S.updateAlarms(dt);
     S.checkTrips();
     if (PWR.phases) PWR.phases.update(S, dt);
   };
 
   /* ---------------- alarms & trips ---------------- */
-  S.updateAlarms = function () {
+  S.updateAlarms = function (dt) {
     var A = {}, hot = S.bubble && S.Tavg > 200;
     A.RX_TRIP = S.tripped;
     A.TURB_TRIP = S.turbTripped;
@@ -359,7 +375,8 @@ PWR.Simulation = function () {
     A.PRZ_LO_L = S.filled && S.bubble && S.przLevel < 18;
     A.HTR_UNCOV = S.filled && S.bubble && S.przLevel < 8;
     A.PORV = S.porvOpen;
-    A.PT_LIMIT = S.filled && S.P > S.ptMaxP();
+    A.PT_HI = S.filled && S.P > PWR.ptMax(S.Tavg) + 2;
+    A.PT_LO = S.filled && S.bubble && S.P < PWR.ptMin(S.Tavg) - 2;
     A.LO_SUBCOOL = S.filled && S.Tavg > 200 && S.subcooling() < 15;
     A.HI_HEATUP = S.filled && Math.abs(S.heatupRate) > 60;
     A.SG_LO_L = S.filled && S.powerPct() > 2 && S.sgLevel < 30;
@@ -367,8 +384,14 @@ PWR.Simulation = function () {
     A.SG_SAFETY = S.qSafety > 1;
     A.HI_TAVG = S.Tavg > 310;
     A.LO_FLOW = S.powerPct() > 25 && S.nPumps() < 4;
-    // penalty for sustained safety-relevant alarms
-    if ((A.PT_LIMIT || A.LO_SUBCOOL || A.SG_SAFETY) && !S._penTimer) S._penTimer = 0;
+    // sustained operation outside the P-T envelope costs points
+    if (A.PT_HI || A.PT_LO) {
+      S._violT = (S._violT || 0) + (dt || 0);
+      if (S._violT >= 30) {
+        S._violT -= 30; S.score -= 10;
+        S.log('Operating outside the P-T envelope: -10 points.', 'warn');
+      }
+    } else S._violT = 0;
     S.alarms = A;
   };
 

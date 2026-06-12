@@ -6,8 +6,8 @@ defueled reactor vessel all the way to 100% power on the grid** — refueling,
 water-solid pressurization, heatup, drawing the pressurizer steam bubble,
 approach to criticality, turbine synchronization and the power ramp.
 
-No build step, no dependencies. Open `index.html` in a browser, or serve the
-folder:
+No build step, no dependencies, and the layout works on phones as well as
+desktops. Open `index.html` in a browser, or serve the folder:
 
 ```
 python3 -m http.server 8000      # then open http://localhost:8000
@@ -51,6 +51,10 @@ when it all goes wrong.
   naturally follow turbine steam demand, just like the real thing.
 - Lumped thermal nodes: fuel, RCS coolant, SG secondary, pressurizer water,
   with saturation-curve water properties (Antoine equation).
+- A live P-T "chaussette" diagram (after the French CPP temperature-pressure
+  diagram) with the APR / AN-RIS-RA / AN-GV / RP operating domains, the
+  plant's trail and operating point. Leaving the envelope raises the
+  P-T ENV HIGH/LOW alarms and bleeds score.
 - Pressurizer with two regimes: **water-solid** (pressure stiff against net
   volume/expansion changes — manage with charging and letdown) and **steam
   bubble** (pressure = saturation pressure of the pressurizer water —
@@ -81,6 +85,7 @@ js/water.js       saturation curve, density, latent heat
 js/simulation.js  the plant model (DOM-free, used by both game and tests)
 js/phases.js      phase objectives and progression
 js/diagram.js     2D canvas rendering of the plant
+js/ptdiagram.js   live P-T "chaussette" diagram
 js/panels.js      control panels, annunciator, indicators
 js/main.js        game loop, time acceleration
 test/sim_test.js  full-startup regression test

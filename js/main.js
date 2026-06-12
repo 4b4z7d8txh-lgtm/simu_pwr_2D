@@ -3,6 +3,7 @@
   var sim = new PWR.Simulation();
   var diagram = new PWR.Diagram(document.getElementById('plantCanvas'));
   var panels = new PWR.Panels(sim);
+  var ptDiag = new PWR.PTDiagram(document.getElementById('ptCanvas'));
   window.sim = sim; // handy for curious players / debugging
 
   var DT = 0.25;          // physics substep, sim seconds
@@ -43,12 +44,17 @@
     var b = document.getElementById('clBody');
     b.style.display = b.style.display === 'none' ? '' : 'none';
   });
+  // on small screens start with the checklist collapsed so the plant is visible
+  if (window.innerWidth < 920) document.getElementById('clBody').style.display = 'none';
 
   function clock() {
     var t = Math.floor(sim.t);
     var h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, s = t % 60;
     return 'T+' + (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
   }
+
+  var evLog = document.getElementById('eventLog');
+  var annun = document.getElementById('annunciator');
 
   function frame(now) {
     var dtReal = Math.min(0.1, (now - lastT) / 1000);
@@ -67,7 +73,9 @@
     document.getElementById('phaseName').textContent =
       'PHASE ' + (sim.phase + 1) + '/6 · ' + PWR.phases.list[sim.phase].name;
     diagram.draw(sim, dtReal);
+    ptDiag.draw(sim);
     panels.refresh();
+    evLog.style.bottom = (annun.offsetHeight + 8) + 'px'; // keep log above the annunciator
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);

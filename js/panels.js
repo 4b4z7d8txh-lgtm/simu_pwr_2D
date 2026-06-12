@@ -25,6 +25,10 @@ PWR.Panels = function (sim) {
       '<button class="btn" id="btnFill">FILL &amp; VENT RCS</button></div>' +
     '</div></div>' +
 
+    '<div class="pnl"><h3>P-T DIAGRAM — "CHAUSSETTE"</h3><div class="bd" style="padding:5px">' +
+      '<canvas id="ptCanvas" width="368" height="250" style="width:100%;display:block"></canvas>' +
+    '</div></div>' +
+
     '<div class="pnl"><h3>REACTIVITY CONTROL</h3><div class="bd">' +
       '<div class="row"><label>Control bank</label>' + seg('segCB', ['IN', 'HOLD', 'OUT']) +
       '<div class="posbar"><div id="cbBar"></div></div><span class="val" id="cbPos">0%</span></div>' +
@@ -128,8 +132,8 @@ PWR.Panels = function (sim) {
     ['T AVG', function (s) { return s.Tavg.toFixed(1); }, '°C', function (s, v) { return v > 310 ? 2 : 0; }],
     ['T REF PROG', function (s) { return PWR.phases.tref(s).toFixed(1); }, '°C', 0],
     ['HEATUP', function (s) { return s.heatupRate.toFixed(0); }, '°C/h', function (s, v) { return Math.abs(v) > 60 ? 2 : Math.abs(v) > 45 ? 1 : 0; }],
-    ['RCS PRESS', function (s) { return s.P.toFixed(1); }, 'bar', function (s, v) { return (s.alarms.PT_LIMIT || v > 160) ? 2 : 0; }],
-    ['PT LIMIT', function (s) { return s.ptMaxP().toFixed(0); }, 'bar max', 0],
+    ['RCS PRESS', function (s) { return s.P.toFixed(1); }, 'bar', function (s, v) { return (s.alarms.PT_HI || s.alarms.PT_LO || v > 160) ? 2 : 0; }],
+    ['P-T WINDOW', function (s) { return Math.round(PWR.ptMin(s.Tavg)) + '-' + Math.round(PWR.ptMax(s.Tavg)); }, 'bar', function (s) { return (s.alarms.PT_HI || s.alarms.PT_LO) ? 2 : 0; }],
     ['SUBCOOL', function (s) { return s.filled ? s.subcooling().toFixed(0) : '--'; }, 'K', function (s, v) { return s.alarms.LO_SUBCOOL ? 2 : 0; }],
     ['PRZ LEVEL', function (s) { return s.przLevel.toFixed(0); }, '%', function (s, v) { return (s.alarms.PRZ_HI_L || s.alarms.PRZ_LO_L) ? 2 : 0; }],
     ['PRZ TEMP', function (s) { return s.Tprz.toFixed(0); }, '°C', 0],
@@ -148,7 +152,7 @@ PWR.Panels = function (sim) {
     ['RX_TRIP', 'REACTOR TRIP'], ['TURB_TRIP', 'TURBINE TRIP'], ['HI_FLUX', 'HI NEUTRON FLUX'],
     ['HI_SUR', 'HI STARTUP RATE'], ['PRZ_HI_P', 'PRZ PRESS HI'], ['PRZ_LO_P', 'PRZ PRESS LO'],
     ['PRZ_HI_L', 'PRZ LEVEL HI'], ['PRZ_LO_L', 'PRZ LEVEL LO'], ['PORV', 'PORV OPEN'],
-    ['PT_LIMIT', 'P-T LIMIT'], ['LO_SUBCOOL', 'SUBCOOL LOW'], ['HI_HEATUP', 'HEATUP RATE HI'],
+    ['PT_HI', 'P-T ENV HIGH'], ['PT_LO', 'P-T ENV LOW'], ['LO_SUBCOOL', 'SUBCOOL LOW'], ['HI_HEATUP', 'HEATUP RATE HI'],
     ['SG_LO_L', 'SG LEVEL LO'], ['SG_HI_L', 'SG LEVEL HI'], ['SG_SAFETY', 'SG SAFETY VLV'],
     ['HI_TAVG', 'TAVG HI'], ['LO_FLOW', 'RCS FLOW LO'], ['HTR_UNCOV', 'PRZ HTR UNCOV']
   ];

@@ -41,19 +41,19 @@ runUntil('core loaded', function (s) { return s.coreLoaded >= 100; }, 200);
 sim.installHead(); sim.fillAndVent();
 runUntil('phase 1 reached', function (s) { return s.phase >= 1; }, 30);
 
-/* ---- Phase 1: pressurize solid ---- */
+/* ---- Phase 1: pressurize solid (stay in the green AN/RIS-RA domain: <=31 bar) ---- */
 sim.ctrl.charging = 20; sim.ctrl.letdown = 2;
-runUntil('solid pressurization to 30 bar', function (s) { return s.P >= 30; }, 4 * 3600);
+runUntil('solid pressurization to 27 bar', function (s) { return s.P >= 27; }, 4 * 3600);
 sim.ctrl.charging = 5; sim.ctrl.letdown = 5;
 for (var i = 0; i < 4; i++) sim.startRcp(i);
 if (sim.nPumps() !== 4) failures.push('RCPs failed to start at P=' + sim.P.toFixed(1));
 
-/* operator: hold a pressure target with heaters/spray/charging, level with CVCS */
+/* operator: follow the chaussette — ride ~10 bar above the lower (saturation
+ * margin) boundary, never above ptMax */
 function pTarget(s) {
-  if (s.phase >= 2) return 155; // once hot, hold nominal pressure
-  if (s.Tavg < 200) return 35;
-  if (s.Tavg < 284) return Math.min(120, 35 + (s.Tavg - 200));
-  return 155;
+  if (s.phase >= 2 || s.Tavg >= 286) return 155; // once hot, hold nominal pressure
+  var p = Math.max(28, Math.min(120, PWR.water.psat(s.Tavg + 35) + 10));
+  return Math.min(p, PWR.ptMax(s.Tavg) - 2);
 }
 function holdP(s) {
   var pt = pTarget(s);
@@ -70,10 +70,10 @@ function holdP(s) {
     s.ctrl.charging = s.przLevel < 38 ? 14 : 5;
   }
 }
-/* heat pressurizer with heaters; keep solid pressure near 35 bar */
-runUntil('PRZ at 235C', function (s) { return s.Tprz >= 235; }, 8 * 3600, holdP);
+/* heat pressurizer with heaters; keep solid pressure in the green domain */
+runUntil('PRZ at 232C', function (s) { return s.Tprz >= 232; }, 8 * 3600, holdP);
 if (sim.nPumps() < 4) failures.push('RCPs lost while heating PRZ (P=' + sim.P.toFixed(1) + ')');
-/* draw bubble */
+/* draw bubble (Psat(232) ~ 29 bar, still under the 31 bar ceiling) */
 runUntil('bubble drawn', function (s) { return s.bubble; }, 2 * 3600, function (s) {
   s.ctrl.heater = 100; s.ctrl.heaterBackup = true;
   s.ctrl.letdown = 22; s.ctrl.charging = 4;
@@ -84,17 +84,19 @@ if (sim.nPumps() < 4) failures.push('RCPs lost during bubble draw (P=' + sim.P.t
 /* heat up to hot standby following the P-T schedule */
 var ptViol = 0;
 runUntil('hot standby 155 bar / 291C', function (s) {
-  if (s.alarms.PT_LIMIT) ptViol++;
+  if (s.alarms.PT_HI || s.alarms.PT_LO) ptViol++;
   return s.P >= 152 && s.P <= 158 && s.Tavg >= 286 && s.Tavg <= 296 && s.przLevel >= 40 && s.przLevel <= 70;
-}, 24 * 3600, function (s) {
-  holdP(s);
-  s.ctrl.dump = s.Tavg > 291 ? 8 : 0; // hold temperature with dump
-  s.ctrl.feed = s.sgLevel < 50 ? 3 : 0;
-});
+}, 24 * 3600, holdHot);
 if (ptViol > 40) failures.push('P-T limit violated for ' + (ptViol * DT).toFixed(0) + 's during heatup');
 runUntil('phase 2 reached', function (s) { return s.phase >= 2; }, 3600, holdHot);
 
-function holdHot(s) { holdP(s); }
+/* hold hot standby: pressure target, Tavg with the dump, SG level with aux feed */
+function holdHot(s) {
+  holdP(s);
+  s.ctrl.dump = s.Tavg > 291.5 ? Math.min(30, 4 + (s.Tavg - 291.5) * 20) : 0;
+  var base = 100 * s.steamFlow / PWR.C.FEED_MAX;
+  s.ctrl.feed = Math.min(12, s.sgLevel < 48 ? base + 3 : s.sgLevel > 52 ? 0 : base);
+}
 
 /* ---- Phase 2: criticality ---- */
 sim.ctrl.sdDir = 1;
@@ -179,6 +181,7 @@ sim.ctrl.cvcs = 'normal';
 runUntil('phase 5 reached', function (s) { return s.phase >= 5; }, 3600, atPower);
 function atPower(s) {
   holdHot(s);
+  s.ctrl.dump = 0; // at power the turbine takes all the steam
   s.ctrl.turbTarget = 1100;
   s.ctrl.feed = 100 * (s.steamFlow / PWR.C.FEED_MAX) + (s.sgLevel < 48 ? 6 : s.sgLevel > 52 ? -6 : 0);
   var tr = PWR.phases.tref(s);

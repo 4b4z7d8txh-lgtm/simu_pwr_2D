@@ -28,9 +28,9 @@ PWR.phases = (function () {
     },
     {
       name: 'MODE 5→4 — HEATUP & PRESSURIZATION',
-      brief: 'Pressurize the solid plant with charging, start the reactor coolant pumps, draw a steam bubble in the pressurizer, then heat up to hot conditions: 155 bar / 290°C. Respect the P-T limit and the 60°C/h heatup limit.',
+      brief: 'Pressurize the solid plant with charging, start the reactor coolant pumps, draw a steam bubble in the pressurizer, then heat up to hot conditions: 155 bar / 290°C. Follow the P-T "chaussette" diagram: stay under 31 bar until 177°C, then climb the sock keeping ≥35 K of margin to saturation. Respect the 60°C/h heatup limit.',
       objectives: [
-        { text: 'Raise RCS pressure above 26 bar (charging > letdown, water-solid)', done: function (s) { return s.P >= 26 || s.bubble; } },
+        { text: 'Raise RCS pressure to 26-31 bar (charging > letdown, stay in the green domain)', done: function (s) { return s.P >= 26 || s.bubble; } },
         { text: 'Start all 4 reactor coolant pumps', done: function (s) { return s.nPumps() === 4; } },
         { text: 'Heat pressurizer above 230°C with heaters', done: function (s) { return s.Tprz >= 230; } },
         { text: 'Draw a steam bubble (letdown > charging until level < 100%)', done: function (s) { return s.bubble; } },

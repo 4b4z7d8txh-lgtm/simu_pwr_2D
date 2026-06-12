@@ -130,7 +130,7 @@ PWR.Diagram = function (canvas) {
     // surge line to hot leg
     pipe([[x + w / 2, y + h], [x + w / 2, 408]], tempColor(s.filled ? s.Tprz : 45), 7, false);
     label(x + w / 2, y + h + 50, 'PRZ', '#7a8aa8', 10);
-    label(x + w / 2, 152, s.P.toFixed(1) + ' bar', s.P > 160 || (s.alarms && s.alarms.PT_LIMIT) ? '#f87171' : '#67e8f9', 11);
+    label(x + w / 2, 152, s.P.toFixed(1) + ' bar', s.P > 160 || (s.alarms && (s.alarms.PT_HI || s.alarms.PT_LO)) ? '#f87171' : '#67e8f9', 11);
   }
 
   function steamGen(s) {
