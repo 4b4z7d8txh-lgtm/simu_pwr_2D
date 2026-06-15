@@ -46,6 +46,12 @@ when it all goes wrong.
 - Point kinetics with one delayed-neutron group (prompt-jump approximation)
   and a fixed source, so the subcritical 1/M count-rate behaviour, startup
   rate in dpm, and trip on 5 dpm are all real consequences of the model.
+- Constants tuned against *La Chaudière des REP* (Framatome ANP, 2004):
+  boron worth ~−10 pcm/ppm, Doppler ~−3 pcm/K, GMPP shaft power ~5.9 MW/pump
+  (deposited into the primary as the heatup source — running 1–4 pumps sets a
+  9–52 °C/h heatup rate under the 56 °C/h fatigue limit), Tavg programme rising
+  from the no-load value to 306.5 °C by 60% load, trips on 118% flux / 169 bar /
+  330 °C core outlet, saturation at 155 bar ≈ 345 °C.
 - Reactivity = excess + boron worth + S-curve rod worth + moderator and
   Doppler feedback. The negative moderator coefficient makes the reactor
   naturally follow turbine steam demand, just like the real thing.

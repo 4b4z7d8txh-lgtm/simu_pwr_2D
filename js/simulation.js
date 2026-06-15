@@ -23,9 +23,9 @@ PWR.C = {
   SOURCE: 4.5e-5,          // neutron source strength (MW-equivalent units)
 
   EXCESS_PCM: 12000,       // core excess reactivity, rods out, no boron, HZP
-  BORON_WORTH: -8,         // pcm / ppm
-  ALPHA_MOD: -12,          // moderator coefficient pcm/K
-  ALPHA_FUEL: -2.5,        // Doppler coefficient pcm/K
+  BORON_WORTH: -10,        // pcm / ppm (ref: ~-10 pcm/ppm at BOC)
+  ALPHA_MOD: -20,          // moderator coefficient pcm/K (ref: -30..-50 hot in-core)
+  ALPHA_FUEL: -3,          // Doppler coefficient pcm/K (ref: ~-3 pcm/K fuel)
   T_REF: 292,              // reference temperature for coefficients (C)
   CB_WORTH: -1200,         // control bank total worth (pcm)
   SD_WORTH: -6000,         // shutdown banks total worth (pcm)
@@ -37,7 +37,8 @@ PWR.C = {
   C_SG: 1.2e6,             // SG secondary heat capacity kJ/K
   C_PRZ: 120e3,            // pressurizer water heat capacity kJ/K
   UA_SG: 143e3,            // primary->secondary conductance kW/K (4 RCPs)
-  PUMP_HEAT: 5,            // MW per RCP
+  PUMP_HEAT: 5.9,          // MW per RCP — GMPP hot shaft power ~5910 kW (1300 MWe),
+                           // dissipated entirely into the closed primary loop
   AMB_LOSS: 2,             // MW losses to containment
   FLOW_NOM: 18000,         // kg/s primary flow, 4 pumps
   CP: 5.0,                 // kJ/kg.K average primary cp
@@ -56,13 +57,15 @@ PWR.C = {
   SG_KG_PER_PCT: 2400,     // SG inventory per % of level
 
   RCP_MIN_P: 24,           // bar needed to run RCPs (seal/NPSH)
-  PORV_BAR: 163,
-  TRIP_HI_P: 166,
+  PORV_BAR: 163,           // power-operated relief valve lift
+  SAFETY_BAR: 172,         // pressurizer safety valves (SEBIM) set pressure
+  TRIP_HI_P: 169,          // reactor trip on PRZ high pressure (below safety set)
   TRIP_LO_P: 131,
-  TRIP_HI_FLUX: 109,       // % nominal
+  TRIP_HI_FLUX: 118,       // % nominal (ref: high neutron flux trip 118% Pn)
   TRIP_SUR: 5,             // decades per minute
-  TRIP_HI_TAVG: 316,
-  TRIP_LO_SGLVL: 15
+  TRIP_HI_TAVG: 330,       // ref: max core-outlet 330 C; trip on high Tavg
+  TRIP_LO_SGLVL: 15,
+  HEATUP_LIMIT: 56         // C/h fatigue limit on primary components (ref)
 };
 
 /* P-T operating envelope, after the French "chaussette" (sock) diagram:
@@ -378,11 +381,11 @@ PWR.Simulation = function () {
     A.PT_HI = S.filled && S.P > PWR.ptMax(S.Tavg) + 2;
     A.PT_LO = S.filled && S.bubble && S.P < PWR.ptMin(S.Tavg) - 2;
     A.LO_SUBCOOL = S.filled && S.Tavg > 200 && S.subcooling() < 15;
-    A.HI_HEATUP = S.filled && Math.abs(S.heatupRate) > 60;
+    A.HI_HEATUP = S.filled && Math.abs(S.heatupRate) > C.HEATUP_LIMIT;
     A.SG_LO_L = S.filled && S.powerPct() > 2 && S.sgLevel < 30;
     A.SG_HI_L = S.filled && S.sgLevel > 75;
     A.SG_SAFETY = S.qSafety > 1;
-    A.HI_TAVG = S.Tavg > 310;
+    A.HI_TAVG = S.filled && S.tHot() > 326;   // core outlet nearing 330 C limit
     A.LO_FLOW = S.powerPct() > 25 && S.nPumps() < 4;
     // sustained operation outside the P-T envelope costs points
     if (A.PT_HI || A.PT_LO) {
@@ -403,7 +406,7 @@ PWR.Simulation = function () {
     if (armed && S.sur > C.TRIP_SUR) return S.scram('high startup rate (>' + C.TRIP_SUR + ' dpm)');
     if (S.bubble && S.P > C.TRIP_HI_P) return S.scram('high pressurizer pressure');
     if (armed && S.bubble && S.Tavg > 280 && S.P < C.TRIP_LO_P) return S.scram('low pressurizer pressure');
-    if (armed && S.Tavg > C.TRIP_HI_TAVG) return S.scram('high RCS temperature');
+    if (armed && S.tHot() > C.TRIP_HI_TAVG) return S.scram('high core-outlet temperature (>' + C.TRIP_HI_TAVG + 'C)');
     if (S.powerPct() > 5 && S.sgLevel < C.TRIP_LO_SGLVL) return S.scram('low-low steam generator level');
     if (S.powerPct() > 30 && S.nPumps() < 4) return S.scram('low reactor coolant flow');
     if (S.bubble && S.powerPct() > 5 && S.przLevel < 10) return S.scram('low pressurizer level');

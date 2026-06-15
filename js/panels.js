@@ -11,9 +11,12 @@ PWR.Panels = function (sim) {
       return '<button data-i="' + i + '">' + o + '</button>';
     }).join('') + '</div>';
   }
-  function slider(id, label, min, max, val, unit) {
+  function slider(id, label, min, max, val, unit, step) {
+    step = step || 1;
     return '<div class="row"><label>' + label + '</label>' +
-      '<input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="0.5" value="' + val + '">' +
+      '<button class="btn nudge" id="' + id + 'Dn" title="−' + step + ' ' + unit + '">−</button>' +
+      '<input type="range" id="' + id + '" min="' + min + '" max="' + max + '" step="' + step + '" value="' + val + '">' +
+      '<button class="btn nudge" id="' + id + 'Up" title="+' + step + ' ' + unit + '">+</button>' +
       '<span class="val" id="' + id + 'V">' + val + ' ' + unit + '</span></div>';
   }
 
@@ -48,8 +51,9 @@ PWR.Panels = function (sim) {
     '</div></div>' +
 
     '<div class="pnl"><h3>CVCS — CHARGING / LETDOWN</h3><div class="bd">' +
-      slider('slChg', 'Charging flow', 0, 40, 5, 'kg/s') +
-      slider('slLtd', 'Letdown flow', 0, 40, 5, 'kg/s') +
+      slider('slChg', 'Charging flow', 0, 40, 5, 'kg/s', 0.1) +
+      slider('slLtd', 'Letdown flow', 0, 40, 5, 'kg/s', 0.1) +
+      '<div class="row mini"><span id="cvcsNet"></span></div>' +
     '</div></div>' +
 
     '<div class="pnl"><h3>REACTOR COOLANT PUMPS</h3><div class="bd"><div class="row" id="rcpRow">' +
@@ -68,7 +72,7 @@ PWR.Panels = function (sim) {
       '<div class="row"><button class="btn" id="btnLatch">LATCH &amp; ROLL</button>' +
       '<button class="btn" id="btnSync">SYNC BREAKER</button><span class="lamp" id="lpSync"></span>' +
       '<span class="val" id="rpmV">0 rpm</span></div>' +
-      slider('slLoad', 'Load setpoint', 0, 1120, 0, 'MWe') +
+      slider('slLoad', 'Load setpoint', 0, 1120, 0, 'MWe', 10) +
     '</div></div>';
 
   /* segment switches */
@@ -90,9 +94,31 @@ PWR.Panels = function (sim) {
 
   function bindSlider(id, fn, unit) {
     var el = $(id);
-    el.addEventListener('input', function () {
-      fn(+el.value); $(id + 'V').textContent = (+el.value).toFixed(unit === 'kg/s' ? 1 : 0) + ' ' + unit;
+    var step = parseFloat(el.step) || 1;
+    var dec = step < 1 ? 1 : 0;
+    var mn = parseFloat(el.min), mx = parseFloat(el.max);
+    function apply() {
+      var v = +el.value;
+      fn(v); $(id + 'V').textContent = v.toFixed(dec) + ' ' + unit;
+    }
+    el.addEventListener('input', apply);
+    function nudge(d) {
+      // snap to the step grid so repeated taps stay tidy (e.g. 5.0, 5.1, 5.2)
+      var v = Math.min(mx, Math.max(mn, Math.round((+el.value + d) / step) * step));
+      el.value = v; apply();
+    }
+    holdRepeat($(id + 'Dn'), function () { nudge(-step); });
+    holdRepeat($(id + 'Up'), function () { nudge(step); });
+  }
+  // fire once on press, then auto-repeat while held (mouse or touch)
+  function holdRepeat(btn, fn) {
+    var iv, to;
+    function stop() { clearTimeout(to); clearInterval(iv); }
+    btn.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); fn();
+      to = setTimeout(function () { iv = setInterval(fn, 90); }, 350);
     });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { btn.addEventListener(ev, stop); });
   }
   bindSlider('slHeat', function (v) { sim.ctrl.heater = v; }, '%');
   bindSlider('slSpray', function (v) { sim.ctrl.spray = v; }, '%');
@@ -129,9 +155,11 @@ PWR.Panels = function (sim) {
     ['STARTUP RATE', function (s) { return s.sur.toFixed(2); }, 'dpm', function (s, v) { return v > 3 ? 2 : v > 1.5 ? 1 : 0; }],
     ['REACTIVITY', function (s) { return Math.max(-9999, Math.round(s.rho)); }, 'pcm', 0],
     ['BORON', function (s) { return Math.round(s.boron); }, 'ppm', 0],
-    ['T AVG', function (s) { return s.Tavg.toFixed(1); }, '°C', function (s, v) { return v > 310 ? 2 : 0; }],
+    ['T AVG', function (s) { return s.Tavg.toFixed(1); }, '°C', function (s) { return s.alarms.HI_TAVG ? 2 : 0; }],
+    ['T HOT/COLD', function (s) { return s.filled ? s.tHot().toFixed(0) + '/' + s.tCold().toFixed(0) : '--'; }, '°C', function (s) { return s.alarms.HI_TAVG ? 2 : 0; }],
     ['T REF PROG', function (s) { return PWR.phases.tref(s).toFixed(1); }, '°C', 0],
-    ['HEATUP', function (s) { return s.heatupRate.toFixed(0); }, '°C/h', function (s, v) { return Math.abs(v) > 60 ? 2 : Math.abs(v) > 45 ? 1 : 0; }],
+    ['HEATUP', function (s) { return s.heatupRate.toFixed(0); }, '°C/h', function (s, v) { return Math.abs(v) > PWR.C.HEATUP_LIMIT ? 2 : Math.abs(v) > 45 ? 1 : 0; }],
+    ['PUMP HEAT', function (s) { return (s.nPumps() * PWR.C.PUMP_HEAT).toFixed(1); }, 'MW', 0],
     ['RCS PRESS', function (s) { return s.P.toFixed(1); }, 'bar', function (s, v) { return (s.alarms.PT_HI || s.alarms.PT_LO || v > 160) ? 2 : 0; }],
     ['P-T WINDOW', function (s) { return Math.round(PWR.ptMin(s.Tavg)) + '-' + Math.round(PWR.ptMax(s.Tavg)); }, 'bar', function (s) { return (s.alarms.PT_HI || s.alarms.PT_LO) ? 2 : 0; }],
     ['SUBCOOL', function (s) { return s.filled ? s.subcooling().toFixed(0) : '--'; }, 'K', function (s, v) { return s.alarms.LO_SUBCOOL ? 2 : 0; }],
@@ -204,6 +232,9 @@ PWR.Panels = function (sim) {
     $('lpSync').classList.toggle('on', s.ctrl.breaker);
     $('sgFlows').textContent = 'steam ' + Math.round(s.steamFlow) + ' kg/s · feed ' + Math.round(s.feedFlow) +
       ' kg/s · dump ' + Math.round(s.qDump) + ' MW';
+    var net = s.ctrl.charging - s.ctrl.letdown;
+    $('cvcsNet').textContent = 'net ' + (net >= 0 ? '+' : '') + net.toFixed(1) + ' kg/s ' +
+      (Math.abs(net) < 0.05 ? '(balanced)' : net > 0 ? '(filling →pressure/level up)' : '(draining →pressure/level down)');
 
     inds.forEach(function (d, i) {
       var el = $('ind' + i), v = d[1](s);

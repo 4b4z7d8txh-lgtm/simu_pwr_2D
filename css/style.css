@@ -122,6 +122,11 @@ header h1 { font-size: 15px; letter-spacing: 1px; color: var(--cyan); white-spac
 .btn:disabled { opacity: 0.4; cursor: default; }
 .btn.danger { background: #5b1d1d; border-color: #a33; }
 .btn.go { background: #14532d; border-color: var(--green); }
+.btn.nudge {
+  flex: 0 0 auto; padding: 3px 9px; min-width: 26px; font-size: 15px; font-weight: 700;
+  line-height: 1.1; border-radius: 4px; touch-action: none; user-select: none;
+}
+.btn.nudge:active { background: #155e36; border-color: var(--green); }
 .seg { display: flex; border: 1px solid var(--edge); border-radius: 4px; overflow: hidden; }
 .seg button { background: var(--panel); color: var(--dim); border: none; padding: 5px 10px; cursor: pointer; font-size: 11px; }
 .seg button.on { background: #155e36; color: #fff; }
@@ -203,8 +208,10 @@ button, input[type=range] { touch-action: manipulation; }
   #side { border-left: none; border-top: 1px solid var(--edge); }
   .row label { min-width: 80px; font-size: 12px; }
   .btn { padding: 11px 13px; font-size: 13px; }
+  .btn.nudge { padding: 8px 14px; min-width: 40px; font-size: 18px; }
   .seg button { padding: 11px 14px; font-size: 12px; }
-  .row input[type=range] { height: 32px; min-width: 110px; }
+  .row label { min-width: 100%; }
+  .row input[type=range] { height: 32px; min-width: 90px; }
   .val { font-size: 13px; }
 
   #modal .box { padding: 14px; }

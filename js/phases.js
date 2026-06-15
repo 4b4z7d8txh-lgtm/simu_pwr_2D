@@ -87,7 +87,12 @@ PWR.phases = (function () {
     }
   ];
 
-  function tref(s) { return 292 + 14 * Math.min(1, Math.max(0, s.mwe / PWR.C.MWE_NOM)); }
+  // Tavg programme vs turbine load (ref 1300 MWe): rises from the no-load
+  // value to ~306.5 C over 0-60% load, then held roughly constant.
+  function tref(s) {
+    var load = Math.min(1, Math.max(0, s.mwe / PWR.C.MWE_NOM));
+    return Math.max(291, 284 + 22.5 * Math.min(1, load / 0.6));
+  }
 
   function update(s, dt) {
     if (s.gameOver) return;
