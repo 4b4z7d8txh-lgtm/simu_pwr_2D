@@ -201,10 +201,10 @@ PWR.Diagram = function (canvas) {
     }
     ctx.restore();
 
-    // nozzle stubs (hot / cold leg penetrations)
+    // nozzle stubs (hot / cold leg penetrations) — same elevation, opposite sides
     ctx.fillStyle = CREAM_DK; ctx.strokeStyle = '#3a2f12'; ctx.lineWidth = 1;
-    roundRect(x + w - 3, 369, 12, 13, 2, true, true);   // hot leg
-    roundRect(x + w - 3, 446, 12, 13, 2, true, true);   // cold leg
+    roundRect(x + w - 3, 369, 12, 13, 2, true, true);   // hot leg  (right)
+    roundRect(x - 9, 369, 12, 13, 2, true, true);       // cold leg (left)
 
     /* ---------- shell wall (cream double wall) ---------- */
     capsulePath(x, y, w, bodyBot, ry);
@@ -466,18 +466,18 @@ PWR.Diagram = function (canvas) {
     var flowing = s.nPumps() > 0;
     var hotC = tempC(s.filled ? s.tHot() : 45, 1);
     var coldC = s.filled ? 'hsla(205,75%,55%,1)' : tempC(45, 1);
-    // hot leg: vessel nozzle -> under pressurizer -> down the SG gap -> SG channel-head bottom
+    // hot leg: vessel nozzle (right) -> under pressurizer -> down the SG gap -> SG channel-head bottom
     pipe([[240, 375], [390, 375], [390, 500], [420, 500], [420, 480]], hotC, 12, flowing, 2);
     // crossover leg: SG channel-head bottom -> U beneath the loop -> RCP suction (bottom)
     pipe([[500, 480], [500, 535], [345, 535], [345, 500]], coldC, 12, flowing, 2);
-    // cold leg: RCP discharge -> back to the vessel
-    pipe([[309, 480], [240, 480], [240, 452]], coldC, 12, flowing, 2);
+    // cold leg: RCP discharge -> behind the vessel -> up the left side -> vessel nozzle (left, hot-leg level)
+    pipe([[309, 480], [309, 500], [105, 500], [105, 375], [130, 375]], coldC, 12, flowing, 2);
     if (s.filled) {
       label(262, 369, s.tHot().toFixed(0) + '\u00b0', hotC, 10, 'center', true);
-      label(272, 470, s.tCold().toFixed(0) + '\u00b0', coldC, 10, 'center', true);
+      label(96, 405, s.tCold().toFixed(0) + '\u00b0', coldC, 10, 'right', true);
       label(345, 392, 'HOT LEG', DIM, 8);
       label(300, 530, 'CROSSOVER', DIM, 8);
-      label(283, 500, 'COLD LEG', DIM, 8);
+      label(96, 392, 'COLD LEG', DIM, 8, 'right');
     }
   }
 

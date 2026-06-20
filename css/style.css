@@ -48,7 +48,7 @@ body {
   color: var(--txt);
   font-family: var(--f-body);
   display: grid;
-  grid-template-rows: 56px 1fr 196px;
+  grid-template-rows: 56px minmax(0, 1fr) 196px;
   grid-template-columns: 1fr 418px;
   grid-template-areas: "hdr hdr" "view side" "deck deck";
   height: 100vh; overflow: hidden;
@@ -165,9 +165,9 @@ header h1 small {
 }
 
 #eventLog {
-  position: absolute; bottom: 12px; left: 12px; width: 480px; max-height: 104px; overflow: hidden;
+  position: absolute; bottom: 12px; right: 72px; width: 300px; max-height: 104px; overflow: hidden;
   font-family: var(--f-data); font-size: 11px; pointer-events: none;
-  display: flex; flex-direction: column-reverse; gap: 1px;
+  display: flex; flex-direction: column-reverse; gap: 1px; align-items: flex-end;
 }
 #eventLog div {
   padding: 2px 8px; letter-spacing: 0.2px; border-radius: 3px;
@@ -458,7 +458,7 @@ button, input[type=range] { touch-action: manipulation; }
 
   #view { height: 54vh; min-height: 360px; }
   #checklist { width: calc(100% - 24px); max-height: 46%; overflow-y: auto; }
-  #eventLog { width: calc(100% - 24px); max-height: 66px; font-size: 10px; }
+  #eventLog { left: 12px; right: 12px; width: auto; max-height: 66px; font-size: 10px; align-items: flex-start; }
   #annunciator { grid-template-columns: repeat(5, 1fr); }
   .ann { font-size: 8px; min-height: 30px; }
 
