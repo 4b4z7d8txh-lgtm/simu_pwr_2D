@@ -34,9 +34,9 @@ PWR.phases = (function () {
         { text: 'Start all 4 reactor coolant pumps', done: function (s) { return s.nPumps() === 4; } },
         { text: 'Heat pressurizer above 230°C with heaters', done: function (s) { return s.Tprz >= 230; } },
         { text: 'Draw a steam bubble (letdown > charging until level < 100%)', done: function (s) { return s.bubble; } },
-        { text: 'Pressurizer level 40-70%', done: function (s) { return s.bubble && s.przLevel >= 40 && s.przLevel <= 70; } },
-        { text: 'RCS average temperature 286-296°C', done: function (s) { return s.Tavg >= 286 && s.Tavg <= 296; } },
-        { text: 'RCS pressure 152-158 bar', done: function (s) { return s.bubble && s.P >= 152 && s.P <= 158; } }
+        { text: 'Pressurizer level in band', done: function (s) { return s.bubble && s.przLevel >= PWR.D.przBand[0] && s.przLevel <= PWR.D.przBand[1]; } },
+        { text: 'RCS average temperature on target', done: function (s) { return s.Tavg >= PWR.D.tavgBand[0] && s.Tavg <= PWR.D.tavgBand[1]; } },
+        { text: 'RCS pressure in band (~155 bar)', done: function (s) { return s.bubble && s.P >= PWR.D.pBand[0] && s.P <= PWR.D.pBand[1]; } }
       ]
     },
     {
@@ -46,9 +46,9 @@ PWR.phases = (function () {
         { text: 'Withdraw shutdown banks to 100%', done: function (s) { return s.sdPos >= 99.5; } },
         { text: 'Dilute towards criticality (boron < 1600 ppm)', done: function (s) { return s.boron < 1600; } },
         { text: 'Reactor critical', done: function (s) { return s.critical && !s.tripped; } },
-        { text: 'Stabilize: power 1 kW - 30 MW, |SUR| < 0.3 dpm for 60 s',
-          done: timed(function (s) { return s.critical && !s.tripped && s.Pn > 1e-3 && s.Pn < 30 && Math.abs(s.sur) < 0.3; }, 'stab', 60) },
-        { text: 'Hold conditions: 152-158 bar, Tavg 286-296°C', done: function (s) { return s.P >= 152 && s.P <= 158 && s.Tavg >= 286 && s.Tavg <= 296; } }
+        { text: 'Stabilize: power 1 kW - 30 MW with a steady startup rate',
+          done: function (s, dt) { return timed(function (q) { return q.critical && !q.tripped && q.Pn > 1e-3 && q.Pn < 30 && Math.abs(q.sur) < PWR.D.surStab; }, 'stab', PWR.D.stabHold)(s, dt); } },
+        { text: 'Hold conditions: pressure and Tavg in band', done: function (s) { return s.P >= PWR.D.pBand[0] && s.P <= PWR.D.pBand[1] && s.Tavg >= PWR.D.tavgBand[0] && s.Tavg <= PWR.D.tavgBand[1]; } }
       ]
     },
     {
@@ -56,7 +56,7 @@ PWR.phases = (function () {
       brief: 'Raise power into the power range. Nuclear heating will push Tavg up: open the steam dump to hold ~292°C and feed the steam generators. Latch and roll the turbine, synchronize the generator and pick up ~300 MWe, then close the dump.',
       objectives: [
         { text: 'Reactor power above 8%', done: function (s) { return s.powerPct() >= 8; } },
-        { text: 'Feedwater in service, SG level 40-60%', done: function (s) { return s.ctrl.feed > 1 && s.sgLevel >= 40 && s.sgLevel <= 60; } },
+        { text: 'Feedwater in service, SG level in band', done: function (s) { return s.ctrl.feed > 1 && s.sgLevel >= PWR.D.sgBand[0] && s.sgLevel <= PWR.D.sgBand[1]; } },
         { text: 'Latch turbine and reach 3000 rpm', done: function (s) { return s.ctrl.turbLatched && s.rpm >= 2985; } },
         { text: 'Synchronize generator (close breaker)', done: function (s) { return s.ctrl.breaker; } },
         { text: 'Generator load ≥ 280 MWe', done: function (s) { return s.mwe >= 280; } },
@@ -69,20 +69,22 @@ PWR.phases = (function () {
       objectives: [
         { text: 'Generator load ≥ 1078 MWe', done: function (s) { return s.mwe >= 1078; } },
         { text: 'Reactor power 97-101%', done: function (s) { var p = s.powerPct(); return p >= 97 && p <= 101; } },
-        { text: 'Tavg within ±4°C of program', done: function (s) { return Math.abs(s.Tavg - PWR.phases.tref(s)) <= 4; } },
-        { text: 'SG level 40-60%', done: function (s) { return s.sgLevel >= 40 && s.sgLevel <= 60; } },
-        { text: 'Pressure 152-158 bar', done: function (s) { return s.P >= 152 && s.P <= 158; } }
+        { text: 'Tavg on program', done: function (s) { return Math.abs(s.Tavg - PWR.phases.tref(s)) <= PWR.D.tavgTol; } },
+        { text: 'SG level in band', done: function (s) { return s.sgLevel >= PWR.D.sgBand[0] && s.sgLevel <= PWR.D.sgBand[1]; } },
+        { text: 'Pressure in band (~155 bar)', done: function (s) { return s.P >= PWR.D.pBand[0] && s.P <= PWR.D.pBand[1]; } }
       ]
     },
     {
       name: 'FULL POWER — STEADY STATE',
-      brief: 'Hold the unit at full power within limits for 5 minutes. Then you have done it: from an open vessel to 1100 MWe on the grid.',
+      brief: 'Hold the unit at full power within limits (5 min real / 90 s beginner). Then you have done it: from an open vessel to 1100 MWe on the grid.',
       objectives: [
-        { text: 'Hold ≥ 1078 MWe with all parameters in limits for 5 min',
-          done: timed(function (s) {
-            return s.mwe >= 1078 && s.powerPct() <= 102 && s.P >= 150 && s.P <= 160 &&
-                   s.sgLevel >= 35 && s.sgLevel <= 65 && Math.abs(s.Tavg - PWR.phases.tref(s)) <= 5;
-          }, 'win', 300) }
+        { text: 'Hold ≥ 1078 MWe with all parameters in limits',
+          done: function (s, dt) {
+            return timed(function (q) {
+              return q.mwe >= 1078 && q.powerPct() <= 102 && q.P >= PWR.D.pWin[0] && q.P <= PWR.D.pWin[1] &&
+                     q.sgLevel >= PWR.D.sgWin[0] && q.sgLevel <= PWR.D.sgWin[1] && Math.abs(q.Tavg - PWR.phases.tref(q)) <= PWR.D.tavgWinTol;
+            }, 'win', PWR.D.winHold)(s, dt);
+          } }
       ]
     }
   ];

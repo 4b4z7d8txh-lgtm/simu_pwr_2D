@@ -112,13 +112,15 @@ header h1 small {
 #scramBtn:hover { filter: brightness(1.08); }
 #scramBtn:active { transform: translateY(3px); box-shadow: 0 0 0 #5e0c14, inset 0 2px 6px rgba(0,0,0,0.5); }
 
-#manualBtn, #muteBtn {
+#manualBtn, #muteBtn, #levelBtn {
   background: var(--bg3); color: var(--txt2); border: 1px solid var(--line2);
   padding: 7px 12px; cursor: pointer; border-radius: 6px;
   font-family: var(--f-head); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
   transition: background .12s, color .12s;
 }
-#manualBtn:hover, #muteBtn:hover { background: var(--bg4); color: var(--txt); border-color: var(--bezel); }
+#manualBtn:hover, #muteBtn:hover, #levelBtn:hover { background: var(--bg4); color: var(--txt); border-color: var(--bezel); }
+#levelBtn { white-space: nowrap; }
+#levelBtn.beginner { color: var(--grn); border-color: var(--grn2); }
 
 /* ============================== PLANT VIEW ============================== */
 #view { grid-area: view; position: relative; display: flex; flex-direction: column; min-width: 0; }
@@ -220,14 +222,22 @@ header h1 small {
 #ackBtn:active { transform: translateY(1px); }
 
 /* ============================== SIDE CONTROL STACK ============================== */
+/* The side column is a fixed P-T dock (always visible) over a scrolling stack of
+   collapsible control panels. */
 #side {
-  grid-area: side; overflow-y: auto; background: linear-gradient(180deg,#0d151d,#0a1118);
-  border-left: 1px solid var(--line2); padding: 10px; scrollbar-width: thin;
-  scrollbar-color: var(--line2) transparent;
+  grid-area: side; background: linear-gradient(180deg,#0d151d,#0a1118);
+  border-left: 1px solid var(--line2);
+  display: flex; flex-direction: column; min-height: 0; overflow: hidden;
 }
-#side::-webkit-scrollbar { width: 9px; }
-#side::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 5px; }
-#side::-webkit-scrollbar-track { background: transparent; }
+#ptDock { flex: 0 0 auto; padding: 10px 10px 0; }
+#ptDock .pnl { margin-bottom: 0; }
+#sideScroll {
+  flex: 1 1 auto; overflow-y: auto; padding: 10px; min-height: 0;
+  scrollbar-width: thin; scrollbar-color: var(--line2) transparent;
+}
+#sideScroll::-webkit-scrollbar { width: 9px; }
+#sideScroll::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 5px; }
+#sideScroll::-webkit-scrollbar-track { background: transparent; }
 
 .pnl {
   background: linear-gradient(180deg,var(--bg2),var(--bg1));
@@ -250,6 +260,16 @@ header h1 small {
   font-style: normal; font-weight: 500; font-size: 10px; letter-spacing: 1px;
   color: var(--dim); margin-left: auto; font-family: var(--f-data);
 }
+/* collapsible control sections */
+#sideScroll .pnl > h3 { cursor: pointer; user-select: none; }
+#sideScroll .pnl > h3:hover { filter: brightness(1.12); }
+.pnl > h3 .clp {
+  flex: 0 0 auto; margin-left: 8px; color: var(--txt2); font-size: 11px; line-height: 1;
+  transition: transform .15s; font-family: var(--f-data);
+}
+.pnl.collapsed > h3 { border-bottom: none; border-radius: 8px; }
+.pnl.collapsed > h3 .clp { transform: rotate(-90deg); }
+.pnl.collapsed > .bd { display: none; }
 .pnl .bd { padding: 10px 12px; display: flex; flex-direction: column; gap: 9px; }
 .row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .row label {
@@ -423,6 +443,39 @@ header h1 small {
 #modal ul, #modal ol { padding-left: 22px; margin: 5px 0; }
 #modal .btn { margin-top: 18px; }
 
+/* ============================== DIFFICULTY START CHOOSER ============================== */
+#startModal {
+  position: fixed; inset: 0; background: rgba(4,7,11,0.86); display: none;
+  align-items: center; justify-content: center; z-index: 60; backdrop-filter: blur(4px);
+}
+#startModal.open { display: flex; }
+#startModal .box {
+  width: min(680px, 92vw); max-height: 90vh; overflow-y: auto;
+  background: linear-gradient(180deg,var(--bg2),var(--bg1));
+  border: 1px solid var(--line2); border-radius: 12px; padding: 24px 28px;
+  box-shadow: 0 30px 80px -20px #000, inset 0 1px 0 rgba(255,255,255,0.04);
+}
+#startModal h2 {
+  color: var(--txt); margin-bottom: 14px; font-size: 25px;
+  font-family: var(--f-head); letter-spacing: 1px; text-transform: uppercase;
+  border-bottom: 1px solid var(--line2); padding-bottom: 9px;
+  display: flex; align-items: center; gap: 10px;
+}
+#startModal h2::before { content:"⬡"; color: var(--cyan); text-shadow: 0 0 12px var(--cyan); }
+#startModal p { font-size: 13px; line-height: 1.6; color: var(--txt2); }
+#startModal b { color: var(--txt); }
+.diffChoices { display: flex; gap: 14px; margin-top: 16px; flex-wrap: wrap; }
+.diffBtn {
+  flex: 1 1 250px; display: flex; flex-direction: column; gap: 7px; align-items: flex-start;
+  text-align: left; padding: 16px 17px; text-transform: none; letter-spacing: 0; line-height: 1.3;
+}
+.diffBtn b { font-size: 16px; letter-spacing: 1px; text-transform: uppercase; font-family: var(--f-head); }
+.diffBtn span {
+  font-size: 12px; color: rgba(4,35,18,0.78); font-family: var(--f-body); font-weight: 500;
+  text-transform: none; letter-spacing: 0; line-height: 1.45;
+}
+.diffBtn:not(.go) span { color: var(--txt2); }
+
 #winBanner {
   position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
   background: radial-gradient(120% 90% at 50% 30%, rgba(20,40,32,0.94), rgba(6,12,16,0.97));
@@ -468,7 +521,10 @@ button, input[type=range] { touch-action: manipulation; }
   #readoutConsole { flex: 1 1 100%; }
   #readoutGrid { grid-template-columns: repeat(5, 1fr); max-height: none; }
 
-  #side { border-left: none; border-top: 1px solid var(--line2); }
+  #side { border-left: none; border-top: 1px solid var(--line2); display: block; overflow: visible; }
+  #ptDock { padding: 10px 10px 0; }
+  #ptDock .pnl { margin-bottom: 11px; }
+  #sideScroll { overflow: visible; padding: 0 10px 10px; }
   .row label { min-width: 100%; }
   .btn { padding: 11px 13px; font-size: 13px; }
   .btn.nudge { padding: 9px 15px; min-width: 42px; font-size: 18px; }

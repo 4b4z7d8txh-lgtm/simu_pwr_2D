@@ -39,6 +39,23 @@
   document.getElementById('manualBtn').addEventListener('click', function () {
     document.getElementById('modal').classList.add('open');
   });
+
+  /* difficulty: start chooser + header LEVEL button */
+  var startModal = document.getElementById('startModal');
+  var levelBtn = document.getElementById('levelBtn');
+  function applyDifficulty(name) {
+    var d = PWR.setDifficulty(name);
+    levelBtn.textContent = 'LEVEL: ' + (name === 'beginner' ? 'BEGINNER' : 'REAL');
+    levelBtn.classList.toggle('beginner', name === 'beginner');
+    sim.log('Difficulty set to ' + d.label + '.', 'info');
+  }
+  document.querySelectorAll('.diffBtn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      applyDifficulty(b.dataset.diff);
+      startModal.classList.remove('open');
+    });
+  });
+  levelBtn.addEventListener('click', function () { startModal.classList.add('open'); });
   document.getElementById('modalClose').addEventListener('click', function () {
     document.getElementById('modal').classList.remove('open');
   });

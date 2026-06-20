@@ -19,8 +19,26 @@ Six phases, each with a live checklist (top-left). Time acceleration up to
 900x for slow evolutions (a realistic ~27 °C/h heatup takes hours of plant
 time); the game automatically slows down when the startup rate gets high.
 Reactor trips cost points; clean operation earns them. Press **MANUAL** in
-the header for the full written procedure, **space** to pause, **SCRAM**
-when it all goes wrong.
+the header for the full written procedure (per-stage goals plus a "what drives
+what" cheat sheet), **space** to pause, **SCRAM** when it all goes wrong.
+
+### Difficulty
+
+On load you pick a level (changeable any time from the header **LEVEL**
+button):
+
+- **Beginner** — forgiving acceptance bands, a gentler (less stiff) water-solid
+  pressurizer, relaxed protective trips (startup-rate trip raised to 9 dpm, the
+  heatup-rate nuisance lifted), shorter stabilization and steady-state holds,
+  and softer score penalties. Same physics, far easier to actually complete.
+- **Real Simulation** — the original full-fidelity plant: tight bands
+  (155 bar ±3, Tavg ±5 °C), every protective trip armed at its real setpoint,
+  and the full 5-minute steady-state hold.
+
+The **P-T "chaussette" diagram** is pinned to the top of the right-hand column
+so it stays visible while you scroll, and every control section below it
+collapses (click its header) so you can hide the panels you don't need in the
+current phase.
 
 | Phase | What you do |
 |---|---|

@@ -445,8 +445,8 @@ PWR.Diagram = function (canvas) {
       for (var xx = 712; xx <= 818; xx += 10) ctx.lineTo(xx, 332 + i2 * 12 + (xx / 10 % 2 ? 3 : -3));
       ctx.stroke();
     }
-    // exhaust to condenser
-    pipe([[762, 212], [762, 300]], 'rgba(120,150,170,0.45)', 10, on, 2);
+    // exhaust to condenser — routed to the turbine's right so it clears the rpm readout
+    pipe([[793, 208], [793, 300]], 'rgba(120,150,170,0.45)', 10, on, 2);
     // steam dump (bypass)
     var dumpOn = s.qDump > 1;
     pipe([[640, 100], [640, 280], [712, 280], [712, 300]], dumpOn ? steamC : '#28384a', 6, dumpOn, 2.5);
