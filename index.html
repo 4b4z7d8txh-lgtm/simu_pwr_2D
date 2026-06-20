@@ -6,13 +6,13 @@
 <title>PWR Startup Simulator — Main Control Room</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow+Semi+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
 <header>
-  <h1>☢ PWR STARTUP SIMULATOR<small>原子炉起動シミュレータ ／ 主制御室</small></h1>
+  <h1>PWR STARTUP SIMULATOR<small>UNIT 1 · MAIN CONTROL ROOM</small></h1>
   <span id="phaseName"></span>
   <span id="clock">T+00:00:00</span>
   <div class="spd" id="spdBox"></div>
@@ -37,7 +37,24 @@
 </div>
 
 <div id="side"></div>
-<footer></footer>
+
+<div id="deck">
+  <div class="console" id="gaugeConsole">
+    <div class="ttl">Process Gauges</div>
+    <div id="gaugeCluster"></div>
+  </div>
+  <div class="console" id="trendConsole">
+    <div class="ttl">Trend Recorder</div>
+    <div id="trendBox">
+      <canvas id="trendCanvas"></canvas>
+      <div id="trendLegend"></div>
+    </div>
+  </div>
+  <div class="console" id="readoutConsole">
+    <div class="ttl">Plant Data</div>
+    <div id="readoutGrid"></div>
+  </div>
+</div>
 
 <div id="modal">
   <div class="box">
@@ -122,6 +139,7 @@
 <script src="js/phases.js"></script>
 <script src="js/ptdiagram.js"></script>
 <script src="js/diagram.js"></script>
+<script src="js/instruments.js"></script>
 <script src="js/panels.js"></script>
 <script src="js/main.js"></script>
 </body>

@@ -4,6 +4,8 @@
   var diagram = new PWR.Diagram(document.getElementById('plantCanvas'));
   var panels = new PWR.Panels(sim);
   var ptDiag = new PWR.PTDiagram(document.getElementById('ptCanvas'));
+  var gauges = new PWR.Gauges(document.getElementById('gaugeCluster'));
+  var trends = new PWR.Trends(document.getElementById('trendCanvas'), document.getElementById('trendLegend'));
   window.sim = sim; // handy for curious players / debugging
 
   var DT = 0.25;          // physics substep, sim seconds
@@ -74,6 +76,9 @@
       'PHASE ' + (sim.phase + 1) + '/6 · ' + PWR.phases.list[sim.phase].name;
     diagram.draw(sim, dtReal);
     ptDiag.draw(sim);
+    gauges.draw(sim);
+    trends.sample(sim);
+    trends.draw(sim);
     panels.refresh();
     evLog.style.bottom = (annun.offsetHeight + 8) + 'px'; // keep log above the annunciator
     requestAnimationFrame(frame);
