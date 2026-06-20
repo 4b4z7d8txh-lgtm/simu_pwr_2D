@@ -21,18 +21,18 @@ PWR.Panels = function (sim) {
   }
 
   $('side').innerHTML =
-    '<div class="pnl" id="pnlFuel"><h3>FUEL HANDLING<i>燃料取扱</i></h3><div class="bd">' +
+    '<div class="pnl" id="pnlFuel"><h3>FUEL HANDLING<i>PMC</i></h3><div class="bd">' +
       '<div class="row"><button class="btn go" id="btnLoad">LOAD CORE</button>' +
       '<div class="posbar"><div id="loadBar"></div></div><span class="val" id="loadPct">0%</span></div>' +
       '<div class="row"><button class="btn" id="btnHead">INSTALL VESSEL HEAD</button>' +
       '<button class="btn" id="btnFill">FILL &amp; VENT RCS</button></div>' +
     '</div></div>' +
 
-    '<div class="pnl"><h3>P-T DIAGRAM — "CHAUSSETTE"<i>圧力温度</i></h3><div class="bd" style="padding:5px">' +
+    '<div class="pnl"><h3>P-T DIAGRAM — "CHAUSSETTE"<i>CPP</i></h3><div class="bd" style="padding:5px">' +
       '<canvas id="ptCanvas" width="368" height="250" style="width:100%;display:block"></canvas>' +
     '</div></div>' +
 
-    '<div class="pnl"><h3>REACTIVITY CONTROL<i>反応度制御</i></h3><div class="bd">' +
+    '<div class="pnl"><h3>REACTIVITY CONTROL<i>RGL</i></h3><div class="bd">' +
       '<div class="row"><label>Control bank</label>' + seg('segCB', ['IN', 'HOLD', 'OUT']) +
       '<div class="posbar"><div id="cbBar"></div></div><span class="val" id="cbPos">0%</span></div>' +
       '<div class="row"><label>Shutdown banks</label>' + seg('segSD', ['IN', 'HOLD', 'OUT']) +
@@ -43,32 +43,32 @@ PWR.Panels = function (sim) {
       '<span class="mini" id="tripMsg"></span></div>' +
     '</div></div>' +
 
-    '<div class="pnl"><h3>PRESSURIZER<i>加圧器</i></h3><div class="bd">' +
+    '<div class="pnl"><h3>PRESSURIZER<i>RCP-PZR</i></h3><div class="bd">' +
       slider('slHeat', 'Prop. heaters', 0, 100, 0, '%') +
       '<div class="row"><label>Backup heaters</label><button class="btn" id="btnBkup">OFF</button>' +
       '<span class="lamp" id="lpBkup"></span><label style="min-width:0">PORV</label><span class="lamp red" id="lpPorv"></span></div>' +
       slider('slSpray', 'Spray valve', 0, 100, 0, '%') +
     '</div></div>' +
 
-    '<div class="pnl"><h3>CVCS — CHARGING / LETDOWN<i>化学体積制御</i></h3><div class="bd">' +
+    '<div class="pnl"><h3>CVCS — CHARGING / LETDOWN<i>RCV</i></h3><div class="bd">' +
       slider('slChg', 'Charging flow', 0, 40, 5, 'kg/s', 0.1) +
       slider('slLtd', 'Letdown flow', 0, 40, 5, 'kg/s', 0.1) +
       '<div class="row mini"><span id="cvcsNet"></span></div>' +
     '</div></div>' +
 
-    '<div class="pnl"><h3>REACTOR COOLANT PUMPS<i>主冷却材ポンプ</i></h3><div class="bd"><div class="row" id="rcpRow">' +
+    '<div class="pnl"><h3>REACTOR COOLANT PUMPS<i>GMPP</i></h3><div class="bd"><div class="row" id="rcpRow">' +
       [0, 1, 2, 3].map(function (i) {
         return '<button class="btn" data-rcp="' + i + '">RCP ' + (i + 1) + ' <span class="lamp" id="lpRcp' + i + '"></span></button>';
       }).join('') +
     '</div></div></div>' +
 
-    '<div class="pnl"><h3>STEAM DUMP &amp; FEEDWATER<i>蒸気・給水</i></h3><div class="bd">' +
+    '<div class="pnl"><h3>STEAM DUMP &amp; FEEDWATER<i>GCT / ARE</i></h3><div class="bd">' +
       slider('slDump', 'Steam dump', 0, 100, 0, '%') +
       slider('slFeed', 'Feedwater', 0, 110, 0, '%') +
       '<div class="row mini"><span id="sgFlows"></span></div>' +
     '</div></div>' +
 
-    '<div class="pnl"><h3>TURBINE — GENERATOR<i>タービン発電機</i></h3><div class="bd">' +
+    '<div class="pnl"><h3>TURBINE — GENERATOR<i>GTA</i></h3><div class="bd">' +
       '<div class="row"><button class="btn" id="btnLatch">LATCH &amp; ROLL</button>' +
       '<button class="btn" id="btnSync">SYNC BREAKER</button><span class="lamp" id="lpSync"></span>' +
       '<span class="val" id="rpmV">0 rpm</span></div>' +
@@ -171,8 +171,8 @@ PWR.Panels = function (sim) {
     ['GENERATOR', function (s) { return Math.round(s.mwe); }, 'MWe', 0],
     ['SCORE', function (s) { return Math.round(s.score); }, 'pts', 0]
   ];
-  document.querySelector('footer').innerHTML = inds.map(function (d, i) {
-    return '<div class="ind"><span class="lb">' + d[0] + '</span><span class="vl" id="ind' + i + '"></span><span class="un">' + d[2] + '</span></div>';
+  document.getElementById('readoutGrid').innerHTML = inds.map(function (d, i) {
+    return '<div class="ind" id="cell' + i + '"><span class="lb">' + d[0] + '</span><span class="vl" id="ind' + i + '"></span><span class="un">' + d[2] + '</span></div>';
   }).join('');
 
   /* ---------------- annunciator ---------------- */
@@ -241,6 +241,8 @@ PWR.Panels = function (sim) {
       el.textContent = v;
       var sev = typeof d[3] === 'function' ? d[3](s, parseFloat(v)) : 0;
       el.className = 'vl' + (sev === 2 ? ' alarm' : sev === 1 ? ' warn' : '');
+      var cell = $('cell' + i);
+      if (cell) cell.className = 'ind' + (sev === 2 ? ' alarmcell' : sev === 1 ? ' warncell' : '');
     });
 
     var anyNew = false;
