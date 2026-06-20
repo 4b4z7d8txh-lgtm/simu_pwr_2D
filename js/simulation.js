@@ -307,7 +307,13 @@ PWR.Simulation = function () {
         S.P += Math.max(-8 * dt, Math.min(8 * dt, dP));
         S._prevVliq = vLiq;
         S.P = Math.max(W.psat(S.Tprz), Math.max(1, S.P));
-        if (S.przLevel < 99.7) {
+        // A steam bubble forms only by boiling: the pressurizer must actually be
+        // at saturation (pressure sitting on its psat(Tprz) floor) and genuinely
+        // hot. Without this, a cold water-solid plant that merely contracts as it
+        // loses heat would "draw" an impossible bubble at ~1 bar / 45 C, pinning
+        // pressure at the floor while charging can no longer raise it.
+        var atSaturation = W.psat(S.Tprz) > 2 && S.P <= W.psat(S.Tprz) + 1;
+        if (S.przLevel < 99.7 && atSaturation) {
           S.bubble = true;
           S.log('Steam bubble drawn in pressurizer at ' + S.P.toFixed(1) + ' bar.', 'good');
         }
