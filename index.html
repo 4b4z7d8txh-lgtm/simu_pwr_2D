@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow+Semi+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/style.css?v=3">
 </head>
 <body>
 
@@ -63,30 +63,6 @@
   <div class="console" id="readoutConsole">
     <div class="ttl">Plant Data</div>
     <div id="readoutGrid"></div>
-  </div>
-</div>
-
-<div id="startModal" class="open">
-  <div class="box">
-    <h2>Select Difficulty</h2>
-    <p>You are about to take a 1100&nbsp;MWe pressurized water reactor from an open, defueled
-    vessel all the way to full power on the grid. Pick how forgiving the plant should be.
-    You can switch any time from the <b>LEVEL</b> button in the header, and read the full
-    step-by-step manual with <b>MANUAL</b>.</p>
-    <div class="diffChoices">
-      <button class="btn go diffBtn" data-diff="beginner">
-        <b>BEGINNER</b>
-        <span>Forgiving acceptance bands, a gentler pressurizer, relaxed protective trips
-        (startup-rate trip raised to 9&nbsp;dpm, no heatup-rate nuisance) and much shorter
-        holds. The same physics, but it lets you learn the moves without tripping. Recommended.</span>
-      </button>
-      <button class="btn diffBtn" data-diff="real">
-        <b>REAL SIMULATION</b>
-        <span>Full fidelity. Tight bands (155&nbsp;bar ±3, Tavg ±5&nbsp;°C), every protective
-        trip armed at its real setpoint and the full 5-minute steady-state hold. The original
-        challenge — exactly how the plant behaves.</span>
-      </button>
-    </div>
   </div>
 </div>
 
@@ -219,13 +195,13 @@
   </div>
 </div>
 
-<script src="js/water.js"></script>
-<script src="js/simulation.js"></script>
-<script src="js/phases.js"></script>
-<script src="js/ptdiagram.js"></script>
-<script src="js/diagram.js"></script>
-<script src="js/instruments.js"></script>
-<script src="js/panels.js"></script>
-<script src="js/main.js"></script>
+<script src="js/water.js?v=3"></script>
+<script src="js/simulation.js?v=3"></script>
+<script src="js/phases.js?v=3"></script>
+<script src="js/ptdiagram.js?v=3"></script>
+<script src="js/diagram.js?v=3"></script>
+<script src="js/instruments.js?v=3"></script>
+<script src="js/panels.js?v=3"></script>
+<script src="js/main.js?v=3"></script>
 </body>
 </html>
