@@ -16,6 +16,7 @@
   <span id="phaseName"></span>
   <span id="clock">T+00:00:00</span>
   <div class="spd" id="spdBox"></div>
+  <button id="levelBtn">LEVEL: REAL</button>
   <button id="manualBtn">MANUAL</button>
   <button id="muteBtn">🔊</button>
   <button id="scramBtn">SCRAM</button>
@@ -36,7 +37,16 @@
   <div id="annunciator"></div>
 </div>
 
-<div id="side"></div>
+<div id="side">
+  <div id="ptDock">
+    <div class="pnl ptpnl"><h3>P-T DIAGRAM — "CHAUSSETTE"<i>CPP</i></h3>
+      <div class="bd" style="padding:5px">
+        <canvas id="ptCanvas" width="368" height="250" style="width:100%;display:block"></canvas>
+      </div>
+    </div>
+  </div>
+  <div id="sideScroll"></div>
+</div>
 
 <div id="deck">
   <div class="console" id="gaugeConsole">
@@ -56,13 +66,72 @@
   </div>
 </div>
 
+<div id="startModal" class="open">
+  <div class="box">
+    <h2>Select Difficulty</h2>
+    <p>You are about to take a 1100&nbsp;MWe pressurized water reactor from an open, defueled
+    vessel all the way to full power on the grid. Pick how forgiving the plant should be.
+    You can switch any time from the <b>LEVEL</b> button in the header, and read the full
+    step-by-step manual with <b>MANUAL</b>.</p>
+    <div class="diffChoices">
+      <button class="btn go diffBtn" data-diff="beginner">
+        <b>BEGINNER</b>
+        <span>Forgiving acceptance bands, a gentler pressurizer, relaxed protective trips
+        (startup-rate trip raised to 9&nbsp;dpm, no heatup-rate nuisance) and much shorter
+        holds. The same physics, but it lets you learn the moves without tripping. Recommended.</span>
+      </button>
+      <button class="btn diffBtn" data-diff="real">
+        <b>REAL SIMULATION</b>
+        <span>Full fidelity. Tight bands (155&nbsp;bar ±3, Tavg ±5&nbsp;°C), every protective
+        trip armed at its real setpoint and the full 5-minute steady-state hold. The original
+        challenge — exactly how the plant behaves.</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="modal">
   <div class="box">
     <h2>Operations Manual — Unit 1 Startup</h2>
     <p>You are the main control room operator. Take the plant from an open, defueled
-    reactor to 100% power. Use the time acceleration buttons (up to 900x) for the slow
-    evolutions, and slow back down for delicate ones (criticality!). Every reactor trip
-    costs 150 points. <b>Space bar</b> pauses.</p>
+    reactor all the way to 100% power on the grid. Use the time-acceleration buttons
+    (up to 900x) for the slow evolutions, and slow back down for the delicate ones
+    (criticality, draws, syncing). <b>Space bar</b> pauses; <b>SCRAM</b> shuts it down.
+    Pick a difficulty from the <b>LEVEL</b> button: <i>Beginner</i> widens every
+    acceptance band, softens the pressurizer, relaxes the trips and shortens the holds;
+    <i>Real Simulation</i> is the full-fidelity plant. A reactor trip costs points
+    (150 real / 40 beginner).</p>
+
+    <h3>How the plant fits together &mdash; what drives what</h3>
+    <p>Spend a minute on this; every phase below is just a subset of it.</p>
+    <ul>
+      <li><b>Reactivity &rarr; reactor power.</b> Power rises when total reactivity is
+      positive, falls when it is negative. You add reactivity by withdrawing
+      <b>rods</b>, by <b>diluting</b> boron (DILUTE removes boron; BORATE adds it,
+      about &minus;10 pcm/ppm), and the plant removes it for you through
+      <b>temperature feedback</b>: hotter coolant and fuel both push reactivity down.
+      That negative feedback is what makes the reactor <i>follow</i> steam demand.</li>
+      <li><b>RCP shaft heat &rarr; temperature (cold plant).</b> Below criticality your only
+      heat source is the reactor coolant pumps &mdash; each adds about 5.9 MW, so pump
+      count sets the heatup rate (1 pump &asymp; 9 C/h up to 4 pumps &asymp; 52 C/h).</li>
+      <li><b>Nuclear heat vs. steam draw &rarr; Tavg (hot plant).</b> Once critical, reactor
+      heat raises Tavg; the <b>steam dump</b> and the <b>turbine</b> remove heat and lower
+      it. Steady Tavg means heat in = heat out.</li>
+      <li><b>Pressurizer temperature &rarr; RCS pressure (with a bubble).</b> With a steam
+      bubble, pressure equals the saturation pressure of the pressurizer water:
+      <b>heaters raise it, spray lowers it</b>. <b>Water-solid</b> (no bubble), pressure is
+      stiff and jumps with any net volume change, so you trim it with <b>charging vs.
+      letdown</b>.</li>
+      <li><b>Charging &minus; letdown &rarr; inventory.</b> Net positive fills the RCS (level,
+      and when solid pressure, go up); net negative drains it. Charging also carries the
+      boron you select.</li>
+      <li><b>Feedwater vs. steam flow &rarr; SG level; SG temperature &rarr; SG pressure.</b>
+      Feed more than you steam and level rises; a hotter SG runs at higher pressure, and the
+      turbine can only pull rated steam from a hot, high-pressure SG.</li>
+    </ul>
+    <p>The <b>P-T &ldquo;chaussette&rdquo; diagram</b> (always visible, top-right) plots your
+    operating point against the allowed envelope &mdash; keep the dot inside the coloured
+    domains. The <b>Plant Data</b> readouts and the <b>annunciator</b> tell you the rest.</p>
 
     <h3>Phase 1 — Refueling</h3>
     <ul>
@@ -124,12 +193,28 @@
     </ul>
 
     <h3>Phase 6 — Steady state</h3>
-    <ul><li>Hold ≥ 1078 MWe within limits for 5 minutes to finish.</li></ul>
+    <ul><li>Hold &ge; 1078 MWe with every parameter in limits for the hold time
+    (5 minutes real / 90 seconds beginner) to finish.</li></ul>
+
+    <h3>Quick controls reference</h3>
+    <ul>
+      <li><b>Reactivity:</b> control bank &amp; shutdown banks (IN/HOLD/OUT), CVCS makeup
+      (BORATE/NORMAL/DILUTE), RESET RX TRIP.</li>
+      <li><b>Pressurizer:</b> proportional + backup heaters (pressure up), spray (pressure
+      down), PORV indication.</li>
+      <li><b>CVCS:</b> charging &amp; letdown flow &mdash; sets inventory, water-solid
+      pressure and boron transport.</li>
+      <li><b>RCPs:</b> 4 coolant pumps &mdash; heat source and flow; need &ge; 24 bar to run.</li>
+      <li><b>Secondary:</b> steam dump (Tavg control), feedwater (SG level).</li>
+      <li><b>Turbine-generator:</b> latch &amp; roll, sync breaker, load setpoint.</li>
+    </ul>
 
     <h3>Trips to avoid</h3>
-    <p>High flux (118% Pn), high SUR (5 dpm), PRZ pressure &lt; 131 / &gt; 169 bar
-    (safety valves lift at 172), core-outlet temperature &gt; 330 °C, SG level &lt; 15%,
-    &lt; 4 RCPs above 30% power, low PRZ level at power.</p>
+    <p>High neutron flux (118% Pn), high startup rate (5 dpm real / 9 beginner), PRZ pressure
+    &lt; 131 / &gt; 169 bar (safety valves lift at 172), core-outlet temperature &gt; 330 °C,
+    SG level &lt; 15%, fewer than 4 RCPs above 30% power, and low PRZ level at power. Beginner
+    raises the startup-rate trip and softens the score penalties, but the protective logic is
+    the same plant.</p>
     <button class="btn" id="modalClose">CLOSE</button>
   </div>
 </div>

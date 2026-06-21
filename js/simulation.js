@@ -68,6 +68,61 @@ PWR.C = {
   HEATUP_LIMIT: 56         // C/h fatigue limit on primary components (ref)
 };
 
+/* ----------------------------------------------------------------------------
+ * Difficulty levels. "real" reproduces the original full-fidelity behaviour
+ * (tight bands, every protective trip armed); "beginner" relaxes the bands,
+ * softens the pressurizer, raises trip setpoints and shortens the holds so the
+ * sequence can be completed while learning. PWR.D is the active config and
+ * defaults to "real" so the headless regression test is unaffected.
+ * -------------------------------------------------------------------------- */
+PWR.difficulties = {
+  real: {
+    label: 'REAL SIMULATION',
+    blurb: 'Full fidelity. Tight bands and every protective trip armed — the plant exactly as it behaves.',
+    tripSUR: 5,            // startup-rate trip, decades/min
+    heatupLimit: 56,       // C/h fatigue limit (alarm + readout)
+    solidStiff: 60,        // bar per m3 net volume change, water-solid
+    surStab: 0.3,          // |SUR| window to declare the reactor stable
+    stabHold: 60,          // s to hold the stable criticality condition
+    winHold: 300,          // s to hold full power for the win
+    pBand: [152, 158],     // RCS pressure objective band, bar
+    tavgBand: [286, 296],  // RCS Tavg objective band, C
+    przBand: [40, 70],     // pressurizer level objective band, %
+    sgBand: [40, 60],      // SG level objective band, %
+    tavgTol: 4,            // +/- C of program at the power ramp
+    pWin: [150, 160],      // pressure band held during the final 5 min
+    sgWin: [35, 65],       // SG level band held during the final hold
+    tavgWinTol: 5,         // +/- C of program during the final hold
+    ptPointPenalty: 10,    // points lost per 30 s outside the P-T envelope
+    tripScore: 150         // points lost on a reactor trip
+  },
+  beginner: {
+    label: 'BEGINNER',
+    blurb: 'Forgiving bands, a gentler pressurizer, relaxed trips and shorter holds. Learn the moves without tripping.',
+    tripSUR: 9,
+    heatupLimit: 120,
+    solidStiff: 22,
+    surStab: 0.7,
+    stabHold: 20,
+    winHold: 90,
+    pBand: [146, 162],
+    tavgBand: [281, 301],
+    przBand: [28, 82],
+    sgBand: [33, 67],
+    tavgTol: 8,
+    pWin: [144, 164],
+    sgWin: [30, 70],
+    tavgWinTol: 9,
+    ptPointPenalty: 0,
+    tripScore: 40
+  }
+};
+PWR.D = PWR.difficulties.real;       // active difficulty (default = real)
+PWR.setDifficulty = function (name) {
+  if (PWR.difficulties[name]) PWR.D = PWR.difficulties[name];
+  return PWR.D;
+};
+
 /* P-T operating envelope, after the French "chaussette" (sock) diagram:
  * - below 177 C (AN/RIS-RA domain): max 31 bar (RHR / cold overpressure limit)
  * - above 177 C (AN/GV sock): left edge jumps to 90 bar then rises ~1 bar/C
@@ -159,7 +214,7 @@ PWR.Simulation = function () {
     S.tripped = true; S.tripReason = reason;
     S.cbPos = 0; S.sdPos = 0; S.ctrl.rodDir = 0; S.ctrl.sdDir = 0;
     S.tripTurbine('reactor trip');
-    S.score -= 150;
+    S.score -= PWR.D.tripScore;
     S.log('REACTOR TRIP: ' + reason, 'bad');
   };
   S.resetTrip = function () {
@@ -303,7 +358,7 @@ PWR.Simulation = function () {
         // (loop water at Tavg + thermal expansion of the hotter PRZ volume)
         var vLiq = S.mass / W.rho(S.Tavg) + C.V_PRZ * (1 - W.rho(S.Tprz) / W.rho(S.Tavg));
         if (S._prevVliq === null) S._prevVliq = vLiq;
-        var dP = C.SOLID_STIFF * (vLiq - S._prevVliq);
+        var dP = PWR.D.solidStiff * (vLiq - S._prevVliq);
         S.P += Math.max(-8 * dt, Math.min(8 * dt, dP));
         S._prevVliq = vLiq;
         S.P = Math.max(W.psat(S.Tprz), Math.max(1, S.P));
@@ -381,7 +436,7 @@ PWR.Simulation = function () {
     A.PT_HI = S.filled && S.P > PWR.ptMax(S.Tavg) + 2;
     A.PT_LO = S.filled && S.bubble && S.P < PWR.ptMin(S.Tavg) - 2;
     A.LO_SUBCOOL = S.filled && S.Tavg > 200 && S.subcooling() < 15;
-    A.HI_HEATUP = S.filled && Math.abs(S.heatupRate) > C.HEATUP_LIMIT;
+    A.HI_HEATUP = S.filled && Math.abs(S.heatupRate) > PWR.D.heatupLimit;
     A.SG_LO_L = S.filled && S.powerPct() > 2 && S.sgLevel < 30;
     A.SG_HI_L = S.filled && S.sgLevel > 75;
     A.SG_SAFETY = S.qSafety > 1;
@@ -390,9 +445,9 @@ PWR.Simulation = function () {
     // sustained operation outside the P-T envelope costs points
     if (A.PT_HI || A.PT_LO) {
       S._violT = (S._violT || 0) + (dt || 0);
-      if (S._violT >= 30) {
-        S._violT -= 30; S.score -= 10;
-        S.log('Operating outside the P-T envelope: -10 points.', 'warn');
+      if (PWR.D.ptPointPenalty > 0 && S._violT >= 30) {
+        S._violT -= 30; S.score -= PWR.D.ptPointPenalty;
+        S.log('Operating outside the P-T envelope: -' + PWR.D.ptPointPenalty + ' points.', 'warn');
       }
     } else S._violT = 0;
     S.alarms = A;
@@ -403,7 +458,7 @@ PWR.Simulation = function () {
     var C = PWR.C;
     var armed = S.critical || S.Pn > 0.5;
     if (armed && S.powerPct() > C.TRIP_HI_FLUX) return S.scram('high neutron flux (>' + C.TRIP_HI_FLUX + '%)');
-    if (armed && S.sur > C.TRIP_SUR) return S.scram('high startup rate (>' + C.TRIP_SUR + ' dpm)');
+    if (armed && S.sur > PWR.D.tripSUR) return S.scram('high startup rate (>' + PWR.D.tripSUR + ' dpm)');
     if (S.bubble && S.P > C.TRIP_HI_P) return S.scram('high pressurizer pressure');
     if (armed && S.bubble && S.Tavg > 280 && S.P < C.TRIP_LO_P) return S.scram('low pressurizer pressure');
     if (armed && S.tHot() > C.TRIP_HI_TAVG) return S.scram('high core-outlet temperature (>' + C.TRIP_HI_TAVG + 'C)');

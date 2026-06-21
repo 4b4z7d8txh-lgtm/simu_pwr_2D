@@ -20,16 +20,12 @@ PWR.Panels = function (sim) {
       '<span class="val" id="' + id + 'V">' + val + ' ' + unit + '</span></div>';
   }
 
-  $('side').innerHTML =
+  $('sideScroll').innerHTML =
     '<div class="pnl" id="pnlFuel"><h3>FUEL HANDLING<i>PMC</i></h3><div class="bd">' +
       '<div class="row"><button class="btn go" id="btnLoad">LOAD CORE</button>' +
       '<div class="posbar"><div id="loadBar"></div></div><span class="val" id="loadPct">0%</span></div>' +
       '<div class="row"><button class="btn" id="btnHead">INSTALL VESSEL HEAD</button>' +
       '<button class="btn" id="btnFill">FILL &amp; VENT RCS</button></div>' +
-    '</div></div>' +
-
-    '<div class="pnl"><h3>P-T DIAGRAM — "CHAUSSETTE"<i>CPP</i></h3><div class="bd" style="padding:5px">' +
-      '<canvas id="ptCanvas" width="368" height="250" style="width:100%;display:block"></canvas>' +
     '</div></div>' +
 
     '<div class="pnl"><h3>REACTIVITY CONTROL<i>RGL</i></h3><div class="bd">' +
@@ -74,6 +70,14 @@ PWR.Panels = function (sim) {
       '<span class="val" id="rpmV">0 rpm</span></div>' +
       slider('slLoad', 'Load setpoint', 0, 1120, 0, 'MWe', 10) +
     '</div></div>';
+
+  /* make every control section in the scrolling column collapsible (click header) */
+  Array.prototype.forEach.call($('sideScroll').querySelectorAll('.pnl > h3'), function (h) {
+    var chev = document.createElement('span');
+    chev.className = 'clp'; chev.textContent = '▾';
+    h.appendChild(chev);
+    h.addEventListener('click', function () { h.parentNode.classList.toggle('collapsed'); });
+  });
 
   /* segment switches */
   function bindSeg(id, fn, def) {
@@ -158,7 +162,7 @@ PWR.Panels = function (sim) {
     ['T AVG', function (s) { return s.Tavg.toFixed(1); }, '°C', function (s) { return s.alarms.HI_TAVG ? 2 : 0; }],
     ['T HOT/COLD', function (s) { return s.filled ? s.tHot().toFixed(0) + '/' + s.tCold().toFixed(0) : '--'; }, '°C', function (s) { return s.alarms.HI_TAVG ? 2 : 0; }],
     ['T REF PROG', function (s) { return PWR.phases.tref(s).toFixed(1); }, '°C', 0],
-    ['HEATUP', function (s) { return s.heatupRate.toFixed(0); }, '°C/h', function (s, v) { return Math.abs(v) > PWR.C.HEATUP_LIMIT ? 2 : Math.abs(v) > 45 ? 1 : 0; }],
+    ['HEATUP', function (s) { return s.heatupRate.toFixed(0); }, '°C/h', function (s, v) { var lim = PWR.D.heatupLimit; return Math.abs(v) > lim ? 2 : Math.abs(v) > lim * 0.8 ? 1 : 0; }],
     ['PUMP HEAT', function (s) { return (s.nPumps() * PWR.C.PUMP_HEAT).toFixed(1); }, 'MW', 0],
     ['RCS PRESS', function (s) { return s.P.toFixed(1); }, 'bar', function (s, v) { return (s.alarms.PT_HI || s.alarms.PT_LO || v > 160) ? 2 : 0; }],
     ['P-T WINDOW', function (s) { return Math.round(PWR.ptMin(s.Tavg)) + '-' + Math.round(PWR.ptMax(s.Tavg)); }, 'bar', function (s) { return (s.alarms.PT_HI || s.alarms.PT_LO) ? 2 : 0; }],
