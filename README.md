@@ -22,18 +22,28 @@ Reactor trips cost points; clean operation earns them. Press **MANUAL** in
 the header for the full written procedure (per-stage goals plus a "what drives
 what" cheat sheet), **space** to pause, **SCRAM** when it all goes wrong.
 
-### Difficulty
+### Operating modes
 
-On load you pick a level (changeable any time from the header **LEVEL**
-button):
+The header **MODE** button cycles how much the computer does for you. Panels
+the computer is driving are locked and badged **⬡ AUTO** — you watch their
+sliders and switches move as it adapts the plant:
 
-- **Beginner** — forgiving acceptance bands, a gentler (less stiff) water-solid
-  pressurizer, relaxed protective trips (startup-rate trip raised to 9 dpm, the
-  heatup-rate nuisance lifted), shorter stabilization and steady-state holds,
-  and softer score penalties. Same physics, far easier to actually complete.
-- **Real Simulation** — the original full-fidelity plant: tight bands
-  (155 bar ±3, Tavg ±5 °C), every protective trip armed at its real setpoint,
-  and the full 5-minute steady-state hold.
+- **Manual** — the full real simulation: you operate everything, tight real
+  acceptance bands (155 bar ±3, Tavg ±5 °C), every protective trip armed, the
+  full 5-minute steady-state hold.
+- **Semi-Auto** (forgiving bands) — *you* run the **primary circuit**
+  (reactivity, pressurizer, CVCS, reactor coolant pumps) while the **computer
+  runs the secondary side**: steam dump, feedwater and the entire
+  turbine-generator (latch, roll, sync, load). A gentle way to learn the
+  reactor side without juggling the balance of plant. Replaces the old beginner
+  level: wider bands, a softer pressurizer, relaxed trips and shorter holds.
+- **Auto** — the computer takes the plant from an open vessel all the way to
+  1100 MWe on its own, on the real plant. Accelerate time and watch; take over
+  any time by switching back to Semi-Auto or Manual.
+
+The autonomous operator uses the same proven control sequence as the
+regression test, so a full hands-off startup reaches full power without
+tripping (`node test/autopilot_test.js`).
 
 The **P-T "chaussette" diagram** is pinned to the top of the right-hand column
 so it stays visible while you scroll, and every control section below it
@@ -94,23 +104,28 @@ multi-loop asymmetry, RHR system, grid events, random malfunctions.
 ## Tests
 
 A headless harness drives a scripted "operator" through the entire startup
-(refueling → 1100 MWe, no trips) against the same physics code the game runs:
+(refueling → 1100 MWe, no trips) against the same physics code the game runs.
+A second harness drives the same startup with the autonomous operator
+(`js/autopilot.js`) in full-auto and semi-auto scope:
 
 ```
 node test/sim_test.js
+node test/autopilot_test.js
 ```
 
 ## Code layout
 
 ```
-index.html        layout + operations manual
-css/style.css     control-room theme
-js/water.js       saturation curve, density, latent heat
-js/simulation.js  the plant model (DOM-free, used by both game and tests)
-js/phases.js      phase objectives and progression
-js/diagram.js     2D canvas rendering of the plant
-js/ptdiagram.js   live P-T "chaussette" diagram
-js/panels.js      control panels, annunciator, indicators
-js/main.js        game loop, time acceleration
-test/sim_test.js  full-startup regression test
+index.html             layout + operations manual
+css/style.css          control-room theme
+js/water.js            saturation curve, density, latent heat
+js/simulation.js       the plant model (DOM-free, used by game and tests)
+js/phases.js           phase objectives and progression
+js/autopilot.js        autonomous operator (drives any subset of the controls)
+js/diagram.js          2D canvas rendering of the plant
+js/ptdiagram.js        live P-T "chaussette" diagram
+js/panels.js           control panels, annunciator, indicators
+js/main.js             game loop, time acceleration, mode selection
+test/sim_test.js       full-startup regression test (scripted operator)
+test/autopilot_test.js full-startup test driven by the autopilot
 ```
