@@ -40,22 +40,24 @@
     document.getElementById('modal').classList.add('open');
   });
 
-  /* difficulty: start chooser + header LEVEL button */
-  var startModal = document.getElementById('startModal');
+  /* difficulty: a single header toggle (BEGINNER <-> REAL) keeps the top bar
+     compact and leaves the space for the plant diagram and readouts. */
   var levelBtn = document.getElementById('levelBtn');
+  var curDiff = 'beginner';
   function applyDifficulty(name) {
-    var d = PWR.setDifficulty(name);
-    levelBtn.textContent = 'LEVEL: ' + (name === 'beginner' ? 'BEGINNER' : 'REAL');
+    curDiff = name;
+    PWR.setDifficulty(name);
+    levelBtn.textContent = name === 'beginner' ? 'LEVEL: BEGINNER' : 'LEVEL: REAL';
     levelBtn.classList.toggle('beginner', name === 'beginner');
-    sim.log('Difficulty set to ' + d.label + '.', 'info');
+    levelBtn.title = name === 'beginner'
+      ? 'Beginner — forgiving bands, relaxed trips, short holds. Click for Real Simulation.'
+      : 'Real Simulation — full fidelity, tight bands, real trips. Click for Beginner.';
+    sim.log('Difficulty set to ' + (name === 'beginner' ? 'BEGINNER' : 'REAL SIMULATION') + '.', 'info');
   }
-  document.querySelectorAll('.diffBtn').forEach(function (b) {
-    b.addEventListener('click', function () {
-      applyDifficulty(b.dataset.diff);
-      startModal.classList.remove('open');
-    });
+  levelBtn.addEventListener('click', function () {
+    applyDifficulty(curDiff === 'beginner' ? 'real' : 'beginner');
   });
-  levelBtn.addEventListener('click', function () { startModal.classList.add('open'); });
+  applyDifficulty('beginner'); // start forgiving; one click switches to the real plant
   document.getElementById('modalClose').addEventListener('click', function () {
     document.getElementById('modal').classList.remove('open');
   });
