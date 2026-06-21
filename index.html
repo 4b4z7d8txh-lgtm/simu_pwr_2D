@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow+Semi+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=3">
+<link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
 
@@ -16,7 +16,7 @@
   <span id="phaseName"></span>
   <span id="clock">T+00:00:00</span>
   <div class="spd" id="spdBox"></div>
-  <button id="levelBtn">LEVEL: REAL</button>
+  <button id="levelBtn">MODE: SEMI-AUTO</button>
   <button id="manualBtn">MANUAL</button>
   <button id="muteBtn">🔊</button>
   <button id="scramBtn">SCRAM</button>
@@ -72,11 +72,27 @@
     <p>You are the main control room operator. Take the plant from an open, defueled
     reactor all the way to 100% power on the grid. Use the time-acceleration buttons
     (up to 900x) for the slow evolutions, and slow back down for the delicate ones
-    (criticality, draws, syncing). <b>Space bar</b> pauses; <b>SCRAM</b> shuts it down.
-    Pick a difficulty from the <b>LEVEL</b> button: <i>Beginner</i> widens every
-    acceptance band, softens the pressurizer, relaxes the trips and shortens the holds;
-    <i>Real Simulation</i> is the full-fidelity plant. A reactor trip costs points
-    (150 real / 40 beginner).</p>
+    (criticality, draws, syncing). <b>Space bar</b> pauses; <b>SCRAM</b> shuts it down.</p>
+
+    <h3>Operating modes &mdash; the MODE button</h3>
+    <p>The header <b>MODE</b> button cycles how much the computer does for you. Panels the
+    computer is driving are locked and badged <b>⬡&nbsp;AUTO</b>; you will see their sliders
+    and switches move on their own as it adapts the plant.</p>
+    <ul>
+      <li><b>MANUAL</b> &mdash; the full real simulation: you operate everything, with the
+      tight real acceptance bands and every protective trip armed at its real setpoint.</li>
+      <li><b>SEMI-AUTO</b> (forgiving bands) &mdash; <i>you</i> run the <b>primary circuit</b>
+      (reactivity, pressurizer, CVCS and the reactor coolant pumps &mdash; i.e. primary
+      pressure and temperature) while the <b>computer runs the secondary side</b>: steam
+      dump, feedwater and the whole turbine-generator (it latches, rolls, synchronizes and
+      loads on its own). A good way to learn the reactor side without juggling the balance
+      of plant.</li>
+      <li><b>AUTO</b> &mdash; the computer runs the <b>entire</b> startup, from loading the
+      core to 1100&nbsp;MWe, on the real plant. No input needed: accelerate time and watch
+      every parameter adapt. Take over at any moment by switching back to SEMI-AUTO or
+      MANUAL.</li>
+    </ul>
+    <p>A reactor trip costs points (150 manual/auto, 40 semi-auto).</p>
 
     <h3>How the plant fits together &mdash; what drives what</h3>
     <p>Spend a minute on this; every phase below is just a subset of it.</p>
@@ -195,13 +211,14 @@
   </div>
 </div>
 
-<script src="js/water.js?v=3"></script>
-<script src="js/simulation.js?v=3"></script>
-<script src="js/phases.js?v=3"></script>
-<script src="js/ptdiagram.js?v=3"></script>
-<script src="js/diagram.js?v=3"></script>
-<script src="js/instruments.js?v=3"></script>
-<script src="js/panels.js?v=3"></script>
-<script src="js/main.js?v=3"></script>
+<script src="js/water.js?v=4"></script>
+<script src="js/simulation.js?v=4"></script>
+<script src="js/phases.js?v=4"></script>
+<script src="js/autopilot.js?v=4"></script>
+<script src="js/ptdiagram.js?v=4"></script>
+<script src="js/diagram.js?v=4"></script>
+<script src="js/instruments.js?v=4"></script>
+<script src="js/panels.js?v=4"></script>
+<script src="js/main.js?v=4"></script>
 </body>
 </html>

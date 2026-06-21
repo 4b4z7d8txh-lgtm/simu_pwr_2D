@@ -121,6 +121,7 @@ header h1 small {
 #manualBtn:hover, #muteBtn:hover, #levelBtn:hover { background: var(--bg4); color: var(--txt); border-color: var(--bezel); }
 #levelBtn { white-space: nowrap; }
 #levelBtn.beginner { color: var(--grn); border-color: var(--grn2); }
+#levelBtn.auto { color: var(--cyan); border-color: var(--cyan); }
 
 /* ============================== PLANT VIEW ============================== */
 #view { grid-area: view; position: relative; display: flex; flex-direction: column; min-width: 0; }
@@ -270,6 +271,15 @@ header h1 small {
 .pnl.collapsed > h3 { border-bottom: none; border-radius: 8px; }
 .pnl.collapsed > h3 .clp { transform: rotate(-90deg); }
 .pnl.collapsed > .bd { display: none; }
+/* panels the computer is driving: locked inputs + an AUTO badge */
+.pnl.auto { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan) inset, 0 6px 18px -10px #000; }
+.pnl.auto > h3 { background: linear-gradient(180deg,#13313b,#102530); }
+.pnl.auto > h3::after {
+  content: "⬡ AUTO"; flex: 0 0 auto; margin-left: 8px; color: var(--cyan);
+  font-size: 9.5px; letter-spacing: 1px; font-family: var(--f-data);
+  text-shadow: 0 0 8px var(--cyan);
+}
+.pnl.auto > .bd { pointer-events: none; opacity: 0.72; }
 .pnl .bd { padding: 10px 12px; display: flex; flex-direction: column; gap: 9px; }
 .row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .row label {

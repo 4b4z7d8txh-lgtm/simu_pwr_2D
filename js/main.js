@@ -6,6 +6,7 @@
   var ptDiag = new PWR.PTDiagram(document.getElementById('ptCanvas'));
   var gauges = new PWR.Gauges(document.getElementById('gaugeCluster'));
   var trends = new PWR.Trends(document.getElementById('trendCanvas'), document.getElementById('trendLegend'));
+  var autopilot = new PWR.Autopilot();
   window.sim = sim; // handy for curious players / debugging
 
   var DT = 0.25;          // physics substep, sim seconds
@@ -40,24 +41,38 @@
     document.getElementById('modal').classList.add('open');
   });
 
-  /* difficulty: a single header toggle (BEGINNER <-> REAL) keeps the top bar
-     compact and leaves the space for the plant diagram and readouts. */
+  /* operating mode: a single compact header button cycles MANUAL → SEMI-AUTO →
+     AUTO. Each mode sets the difficulty bands and hands the matching control
+     groups to the autopilot; the panels it owns are locked and visibly badged
+     so the player can watch the computer adapt them. */
   var levelBtn = document.getElementById('levelBtn');
-  var curDiff = 'beginner';
-  function applyDifficulty(name) {
-    curDiff = name;
-    PWR.setDifficulty(name);
-    levelBtn.textContent = name === 'beginner' ? 'LEVEL: BEGINNER' : 'LEVEL: REAL';
-    levelBtn.classList.toggle('beginner', name === 'beginner');
-    levelBtn.title = name === 'beginner'
-      ? 'Beginner — forgiving bands, relaxed trips, short holds. Click for Real Simulation.'
-      : 'Real Simulation — full fidelity, tight bands, real trips. Click for Beginner.';
-    sim.log('Difficulty set to ' + (name === 'beginner' ? 'BEGINNER' : 'REAL SIMULATION') + '.', 'info');
+  var modes = ['manual', 'semi', 'auto'];
+  var modeCfg = {
+    manual: { diff: 'real', scope: [], label: 'MODE: MANUAL',
+      title: 'Manual — full real simulation, you operate everything. Click for Semi-Auto.' },
+    semi: { diff: 'beginner', scope: ['sec'], label: 'MODE: SEMI-AUTO',
+      title: 'Semi-Auto — you run the primary circuit (reactivity, pressurizer, CVCS, pumps); the computer runs the secondary (steam dump, feedwater, turbine). Click for Auto.' },
+    auto: { diff: 'real', scope: ['mech', 'react', 'press', 'rcp', 'sec'], label: 'MODE: AUTO',
+      title: 'Auto — the computer runs the entire startup; sit back and watch the parameters adapt. Click for Manual.' }
+  };
+  var curMode = 'manual';
+  function applyMode(name) {
+    curMode = name;
+    var m = modeCfg[name];
+    PWR.setDifficulty(m.diff);
+    autopilot.setScope(m.scope);
+    panels.setAutoGroups(autopilot.owned);
+    levelBtn.textContent = m.label;
+    levelBtn.title = m.title;
+    levelBtn.classList.toggle('beginner', name === 'semi');
+    levelBtn.classList.toggle('auto', name === 'auto');
+    sim.log('Operating mode: ' + m.label.replace('MODE: ', '') +
+      (name === 'manual' ? '' : ' — computer ' + autopilot.statusText() + '.'), 'info');
   }
   levelBtn.addEventListener('click', function () {
-    applyDifficulty(curDiff === 'beginner' ? 'real' : 'beginner');
+    applyMode(modes[(modes.indexOf(curMode) + 1) % modes.length]);
   });
-  applyDifficulty('beginner'); // start forgiving; one click switches to the real plant
+  applyMode('semi'); // start with the secondary side automated as a helpful default
   document.getElementById('modalClose').addEventListener('click', function () {
     document.getElementById('modal').classList.remove('open');
   });
@@ -82,7 +97,7 @@
     lastT = now;
     acc += dtReal * speed;
     var steps = 0;
-    while (acc >= DT && steps < 6000) { sim.step(DT); acc -= DT; steps++; }
+    while (acc >= DT && steps < 6000) { autopilot.step(sim, DT); sim.step(DT); acc -= DT; steps++; }
     if (steps >= 6000) acc = 0;
 
     // guardrails: drop acceleration when things get fast or the reactor trips

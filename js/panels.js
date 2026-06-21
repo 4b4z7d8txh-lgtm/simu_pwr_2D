@@ -21,14 +21,14 @@ PWR.Panels = function (sim) {
   }
 
   $('sideScroll').innerHTML =
-    '<div class="pnl" id="pnlFuel"><h3>FUEL HANDLING<i>PMC</i></h3><div class="bd">' +
+    '<div class="pnl" id="pnlFuel" data-grp="mech"><h3>FUEL HANDLING<i>PMC</i></h3><div class="bd">' +
       '<div class="row"><button class="btn go" id="btnLoad">LOAD CORE</button>' +
       '<div class="posbar"><div id="loadBar"></div></div><span class="val" id="loadPct">0%</span></div>' +
       '<div class="row"><button class="btn" id="btnHead">INSTALL VESSEL HEAD</button>' +
       '<button class="btn" id="btnFill">FILL &amp; VENT RCS</button></div>' +
     '</div></div>' +
 
-    '<div class="pnl"><h3>REACTIVITY CONTROL<i>RGL</i></h3><div class="bd">' +
+    '<div class="pnl" data-grp="react"><h3>REACTIVITY CONTROL<i>RGL</i></h3><div class="bd">' +
       '<div class="row"><label>Control bank</label>' + seg('segCB', ['IN', 'HOLD', 'OUT']) +
       '<div class="posbar"><div id="cbBar"></div></div><span class="val" id="cbPos">0%</span></div>' +
       '<div class="row"><label>Shutdown banks</label>' + seg('segSD', ['IN', 'HOLD', 'OUT']) +
@@ -39,32 +39,32 @@ PWR.Panels = function (sim) {
       '<span class="mini" id="tripMsg"></span></div>' +
     '</div></div>' +
 
-    '<div class="pnl"><h3>PRESSURIZER<i>RCP-PZR</i></h3><div class="bd">' +
+    '<div class="pnl" data-grp="press"><h3>PRESSURIZER<i>RCP-PZR</i></h3><div class="bd">' +
       slider('slHeat', 'Prop. heaters', 0, 100, 0, '%') +
       '<div class="row"><label>Backup heaters</label><button class="btn" id="btnBkup">OFF</button>' +
       '<span class="lamp" id="lpBkup"></span><label style="min-width:0">PORV</label><span class="lamp red" id="lpPorv"></span></div>' +
       slider('slSpray', 'Spray valve', 0, 100, 0, '%') +
     '</div></div>' +
 
-    '<div class="pnl"><h3>CVCS — CHARGING / LETDOWN<i>RCV</i></h3><div class="bd">' +
+    '<div class="pnl" data-grp="press"><h3>CVCS — CHARGING / LETDOWN<i>RCV</i></h3><div class="bd">' +
       slider('slChg', 'Charging flow', 0, 40, 5, 'kg/s', 0.1) +
       slider('slLtd', 'Letdown flow', 0, 40, 5, 'kg/s', 0.1) +
       '<div class="row mini"><span id="cvcsNet"></span></div>' +
     '</div></div>' +
 
-    '<div class="pnl"><h3>REACTOR COOLANT PUMPS<i>GMPP</i></h3><div class="bd"><div class="row" id="rcpRow">' +
+    '<div class="pnl" data-grp="rcp"><h3>REACTOR COOLANT PUMPS<i>GMPP</i></h3><div class="bd"><div class="row" id="rcpRow">' +
       [0, 1, 2, 3].map(function (i) {
         return '<button class="btn" data-rcp="' + i + '">RCP ' + (i + 1) + ' <span class="lamp" id="lpRcp' + i + '"></span></button>';
       }).join('') +
     '</div></div></div>' +
 
-    '<div class="pnl"><h3>STEAM DUMP &amp; FEEDWATER<i>GCT / ARE</i></h3><div class="bd">' +
+    '<div class="pnl" data-grp="sec"><h3>STEAM DUMP &amp; FEEDWATER<i>GCT / ARE</i></h3><div class="bd">' +
       slider('slDump', 'Steam dump', 0, 100, 0, '%') +
       slider('slFeed', 'Feedwater', 0, 110, 0, '%') +
       '<div class="row mini"><span id="sgFlows"></span></div>' +
     '</div></div>' +
 
-    '<div class="pnl"><h3>TURBINE — GENERATOR<i>GTA</i></h3><div class="bd">' +
+    '<div class="pnl" data-grp="sec"><h3>TURBINE — GENERATOR<i>GTA</i></h3><div class="bd">' +
       '<div class="row"><button class="btn" id="btnLatch">LATCH &amp; ROLL</button>' +
       '<button class="btn" id="btnSync">SYNC BREAKER</button><span class="lamp" id="lpSync"></span>' +
       '<span class="val" id="rpmV">0 rpm</span></div>' +
@@ -152,6 +152,36 @@ PWR.Panels = function (sim) {
     });
   });
 
+  /* ---------------- autopilot integration ---------------- */
+  // reflect a control's value back into its widget so the player can watch the
+  // computer (or a script) move the sliders and switches in real time
+  function setSlider(id, val) {
+    var el = $(id); if (!el) return;
+    var step = parseFloat(el.step) || 1, dec = step < 1 ? 1 : 0;
+    var v = Math.max(parseFloat(el.min), Math.min(parseFloat(el.max), val));
+    if (document.activeElement !== el) el.value = v;     // don't fight an active drag
+    var unit = el.id === 'slChg' || el.id === 'slLtd' ? 'kg/s'
+             : el.id === 'slLoad' ? 'MWe' : '%';
+    $(id + 'V').textContent = (+el.value).toFixed(dec) + ' ' + unit;
+  }
+  this.syncControls = function () {
+    var ct = sim.ctrl;
+    setSlider('slHeat', ct.heater); setSlider('slSpray', ct.spray);
+    setSlider('slChg', ct.charging); setSlider('slLtd', ct.letdown);
+    setSlider('slDump', ct.dump); setSlider('slFeed', ct.feed);
+    setSlider('slLoad', ct.turbTarget);
+    $('segCB')._set(ct.rodDir + 1);
+    $('segSD')._set(ct.sdDir + 1);
+    $('segBor')._set({ borate: 0, normal: 1, dilute: 2 }[ct.cvcs]);
+    $('btnBkup').textContent = ct.heaterBackup ? 'ON' : 'OFF';
+  };
+  // mark the panels the computer is driving (locks their inputs, shows a badge)
+  this.setAutoGroups = function (owned) {
+    Array.prototype.forEach.call($('sideScroll').querySelectorAll('.pnl'), function (p) {
+      p.classList.toggle('auto', !!(owned && owned[p.dataset.grp]));
+    });
+  };
+
   /* ---------------- footer indicators ---------------- */
   var inds = [
     ['PWR RANGE', function (s) { return s.powerPct().toFixed(1); }, '%', function (s, v) { return v > 103 ? 2 : v > 100.5 ? 1 : 0; }],
@@ -215,8 +245,10 @@ PWR.Panels = function (sim) {
 
   /* ---------------- per-frame refresh ---------------- */
   var wasTripped = false;
+  var self = this;
   this.refresh = function () {
     var s = sim;
+    self.syncControls();        // show live control positions (incl. autopilot)
     if (s.tripped && !wasTripped) { $('segCB')._set(1); $('segSD')._set(1); }
     wasTripped = s.tripped;
     // fueling panel visibility
